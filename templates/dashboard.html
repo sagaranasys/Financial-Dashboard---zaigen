@@ -1,0 +1,1390 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - zaigen{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Painel de Controle</h1>
+
+        {% if meses %}
+        <div class="month-selector">
+            <label for="mes">Período:</label>
+            <select id="mes" onchange="window.location.href='?mes='+this.value">
+                {% for mes in meses %}
+                <option value="{{ mes }}" {% if mes == mes_selecionado %}selected{% endif %}>
+                    {{ mes }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if not meses %}
+    <!-- Estado vazio -->
+    <div class="empty-state">
+        <div class="empty-icon">◇</div>
+        <h2>Sem dados disponíveis</h2>
+        <p>Importe suas faturas para começar a análise</p>
+        <a href="{{ url_for('upload') }}" class="btn btn-primary">
+            Importar Faturas
+        </a>
+    </div>
+    {% else %}
+    <!-- Resumo rápido -->
+    <div class="summary-cards">
+        <div class="card">
+            <div class="card-header">
+                <h3>Total do Mês</h3>
+            </div>
+            <div class="card-body">
+                <div class="metric-value">{{ dados.total_mes|moeda }}</div>
+                {% if dados.variacao_pct != 0 %}
+                <div class="metric-change {% if dados.variacao_pct > 0 %}negative{% else %}positive{% endif %}">
+                    {% if dados.variacao_pct > 0 %}▲{% else %}▼{% endif %}
+                    {{ dados.variacao_pct|abs|round(1) }}% vs anterior
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card meta-card">
+            <div class="card-header">
+                <h3>Meta Mensal</h3>
+                <a href="{{ url_for('metas') }}" class="btn-icon" title="Configurar Meta">⚙</a>
+            </div>
+            <div class="card-body">
+                {% if dados.meta > 0 %}
+                <div class="gauge-container">
+                    <div class="gauge" data-value="{{ dados.meta_percentual|round(1) }}">
+                        <svg viewBox="0 0 200 120" class="gauge-svg">
+                            <!-- Trilha de fundo -->
+                            <path class="gauge-track" d="M 20 100 A 80 80 0 0 1 180 100" />
+                            <!-- Progresso -->
+                            <path class="gauge-progress" d="M 20 100 A 80 80 0 0 1 180 100"
+                                  style="--progress: {{ [dados.meta_percentual, 100]|min }};" />
+                        </svg>
+                        <div class="gauge-center">
+                            <span class="gauge-value {% if dados.meta_percentual > 100 %}over-budget{% elif dados.meta_percentual > 80 %}warning{% endif %}">
+                                {{ dados.meta_percentual|round(0)|int }}%
+                            </span>
+                            <span class="gauge-label">da meta</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="meta-info">
+                    <div class="meta-row">
+                        <span>Meta:</span>
+                        <span class="meta-value">{{ dados.meta|moeda }}</span>
+                    </div>
+                    <div class="meta-row {% if dados.meta_restante < 0 %}negative{% else %}positive{% endif %}">
+                        <span>{% if dados.meta_restante >= 0 %}Disponível:{% else %}Excedido:{% endif %}</span>
+                        <span class="meta-value">{{ dados.meta_restante|abs|moeda }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="meta-empty">
+                    <div class="empty-icon">◎</div>
+                    <p>Meta não configurada</p>
+                    <a href="{{ url_for('metas') }}" class="btn btn-sm btn-primary">Definir Meta</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="charts-grid">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h3>Distribuição por Categoria</h3>
+                <button class="btn-legend-toggle" id="toggleLegenda" title="Mostrar/Ocultar legenda">
+                    <span class="toggle-icon">☰</span> Legenda
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="chart-container chart-container-large">
+                    <canvas id="chartCategorias"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card chart-card">
+            <div class="card-header">
+                <h3>Evolução Mensal</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="chartMensal"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card chart-card">
+            <div class="card-header">
+                <h3>Recorrente vs Variável</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="chartRecorrencia"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card chart-card full-width">
+            <div class="card-header">
+                <h3>Tendência de Gastos (Acumulado)</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container chart-container-large">
+                    <canvas id="chartTendencia"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de categorias com expansão -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Gastos por Categoria</h3>
+            <span class="text-muted text-small">Clique para expandir</span>
+        </div>
+        <div class="card-body">
+            {% if dados.resumo_categorias %}
+            <table class="table table-expandable">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Categoria</th>
+                        <th>Tendência (6m)</th>
+                        <th class="text-center">Qtd</th>
+                        <th class="text-right">Total</th>
+                        <th class="text-right">Média</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in dados.resumo_categorias %}
+                    <tr class="category-row" data-categoria="{{ cat.categoria or '' }}" data-mes="{{ mes_selecionado }}">
+                        <td class="expand-toggle">
+                            <span class="expand-icon">▶</span>
+                        </td>
+                        <td>{{ cat.categoria or 'Não Classificado' }}</td>
+                        <td>
+                            {% if not cat.is_estorno %}
+                            <div class="sparkline-container" data-categoria="{{ cat.categoria or 'Não Classificado' }}"></div>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ cat.quantidade }}</td>
+                        <td class="text-right">
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                                <div>
+                                    {% if cat.is_alerta_media %}
+                                    <span class="text-warning warning-icon" style="cursor: help; margin-right: 4px; font-size: 1.1em;" 
+                                          title="ATENÇÃO: Gasto R$ {{ cat.diff_media|moeda }} acima da sua média histórica (R$ {{ cat.media_historica|moeda }})">
+                                        ⚠️
+                                    </span>
+                                    {% endif %}
+                                    <span class="{{ 'text-warning font-weight-bold' if cat.is_alerta_media else '' }}">
+                                        {% if cat.is_estorno %}-{% endif %}{{ cat.total|abs|moeda }}
+                                    </span>
+                                </div>
+
+                                {% if cat.variacao_pct is defined and not cat.is_estorno %}
+                                    {% if cat.variacao_pct == 0 %}
+                                    <div class="variation-badge text-neutral" title="Gasto estável vs mês anterior">
+                                        ~ 0%
+                                    </div>
+                                    {% else %}
+                                    {% set is_high_variation = cat.variacao_pct > 20 %}
+                                    <div class="variation-badge {{ 'text-danger' if cat.variacao_pct > 0 else 'text-success' }}" 
+                                         style="{{ 'font-weight: bold; border: 1px solid rgba(255, 99, 132, 0.4);' if is_high_variation and cat.variacao_pct > 0 else '' }}"
+                                         title="{{ 'Aumento' if cat.variacao_pct > 0 else 'Redução' }} de {{ cat.diferenca|abs|moeda }} vs mês anterior">
+                                        {{ '▲' if cat.variacao_pct > 0 else '▼' }} {{ cat.variacao_pct|abs|round(0) }}%
+                                    </div>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="text-right">{% if cat.is_estorno %}-{% endif %}{{ cat.media|abs|moeda }}</td>
+                    </tr>
+                    <tr class="detail-row hidden">
+                        <td colspan="6">
+                            <div class="detail-container">
+                                <div class="detail-loading">Carregando...</div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-total">
+                        <td></td>
+                        <td>TOTAL</td>
+                        <td></td>
+                        <td class="text-center">{{ dados.resumo_categorias|sum(attribute='quantidade') }}</td>
+                        <td class="text-right">{{ dados.total_mes|moeda }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">Nenhuma transação neste período</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Gastos Recorrentes -->
+    <div class="card recorrentes-card">
+        <div class="card-header">
+            <h3>🔄 Gastos Recorrentes</h3>
+            <div class="header-actions">
+                <button class="btn btn-sm btn-secondary" id="btnAdicionarRecorrente" title="Adicionar recorrente manualmente">+ Adicionar</button>
+                <button class="btn-icon" id="refreshRecorrentes" title="Atualizar">↻</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="recorrentesContent">
+                <div class="loading-state">
+                    <span class="loading-spinner"></span> Analisando transações...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar Recorrente -->
+    <div id="modalRecorrente" class="modal-overlay hidden" role="dialog" aria-labelledby="modalRecorrenteTitle" aria-modal="true">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3 id="modalRecorrenteTitle">Adicionar Gasto Recorrente</h3>
+                <button class="modal-close" onclick="fecharModalRecorrente()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Descrição *</label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="recorrenteDescricao" placeholder="Digite ou selecione um item existente..." required autocomplete="off">
+                        <div id="recorrenteDescricaoSugestoes" class="autocomplete-dropdown"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="recorrenteCategoria">
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Valor estimado</label>
+                    <input type="number" id="recorrenteValor" placeholder="0,00" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="recorrenteTipo">
+                        <option value="mensal">Mensal</option>
+                        <option value="parcelado">Parcelado</option>
+                    </select>
+                </div>
+                <div id="recorrenteFeedback" class="feedback-message"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModalRecorrente()">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarRecorrente()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Dados do servidor
+const mesSelecionado = "{{ mes_selecionado }}";
+const dadosCategorias = {{ dados.resumo_categorias | tojson if dados.resumo_categorias else '[]' | safe }};
+const dadosTendencias = {{ dados.tendencias | tojson if dados.tendencias else '{}' | safe }};
+
+// Inicializar gráficos quando página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    if (mesSelecionado) {
+        initCharts();
+        initSparklines();
+    }
+});
+
+function initSparklines() {
+    const sparklineElements = document.querySelectorAll('.sparkline-container');
+    
+    sparklineElements.forEach(el => {
+        const categoria = el.dataset.categoria;
+        const valores = dadosTendencias[categoria];
+        
+        if (!valores || valores.length < 2) {
+            el.innerHTML = '<span class="text-muted text-small">--</span>';
+            return;
+        }
+        
+        // Configuração do SVG
+        const width = 100;
+        const height = 30;
+        const padding = 2;
+        
+        // Normalizar valores para caber no SVG
+        const max = Math.max(...valores);
+        const min = Math.min(...valores);
+        const range = max - min || 1; // Evitar divisão por zero
+        
+        // Gerar pontos do path
+        const points = valores.map((val, index) => {
+            const x = (index / (valores.length - 1)) * (width - 2 * padding) + padding;
+            // Inverter Y porque SVG começa do topo
+            const y = height - ((val - min) / range) * (height - 2 * padding) - padding;
+            return `${x},${y}`;
+        }).join(' ');
+        
+        // Determinar cor baseada na tendência (último vs penúltimo)
+        const ultimo = valores[valores.length - 1];
+        const penultimo = valores[valores.length - 2];
+        const cor = ultimo > penultimo ? '#ff3366' : '#00ff88'; // Vermelho se subiu, Verde se caiu (para gastos)
+        
+        // Criar SVG
+        el.innerHTML = `
+            <svg width="${width}" height="${height}" class="sparkline-svg">
+                <polyline
+                    points="${points}"
+                    fill="none"
+                    stroke="${cor}"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <circle cx="${width-padding}" cy="${height - ((ultimo - min) / range) * (height - 2 * padding) - padding}" r="3" fill="${cor}" />
+            </svg>
+        `;
+    });
+}
+
+async function initCharts() {
+    // Configuração global do Chart.js para tema escuro
+    Chart.defaults.color = '#8892b0';
+    Chart.defaults.borderColor = 'rgba(100, 255, 218, 0.1)';
+
+    // Gráfico de Pizza - Categorias
+    initCategoriaChart();
+
+    // Gráfico de Barras - Evolução Mensal
+    await initMensalChart();
+
+    // Gráfico Empilhado - Recorrente vs Variável
+    await initRecorrenciaChart();
+
+    // Gráfico de Linha - Tendência
+    await initTendenciaChart();
+}
+
+// Variável global para controlar o chart de categorias
+let chartCategorias = null;
+let legendaVisivel = false;
+
+function initCategoriaChart() {
+    const ctx = document.getElementById('chartCategorias');
+    if (!ctx || !dadosCategorias.length) return;
+
+    // Os dados já vêm filtrados do backend (apenas despesas, sem estornos)
+    // Filtramos apenas zerados por segurança
+    const dadosFiltrados = dadosCategorias.filter(c => c.total > 0);
+
+    // Cores neon cyberpunk para as categorias
+    const cores = [
+        '#00f0ff', // Ciano neon (principal)
+        '#ff8c32', // Laranja neon (secundário)
+        '#00ff9f', // Verde neon elétrico
+        '#ff2a6d', // Magenta neon
+        '#05ffa1', // Verde menta neon
+        '#d300c5', // Rosa pink neon
+        '#7b2cbf', // Roxo neon
+        '#ffdd00', // Amarelo neon
+        '#00d4ff', // Azul claro neon
+        '#ff6b6b', // Vermelho coral neon
+        '#c77dff', // Lilás neon
+        '#72efdd', // Turquesa neon
+    ];
+
+    const labels = dadosFiltrados.map(c => c.categoria || 'Não Classificado');
+    const valores = dadosFiltrados.map(c => c.total);
+
+    chartCategorias = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: valores,
+                backgroundColor: cores.slice(0, labels.length),
+                borderColor: '#0a192f',
+                borderWidth: 1,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: 25
+            },
+            plugins: {
+                legend: {
+                    display: false, // Legenda oculta por padrão
+                    position: 'bottom',
+                    labels: {
+                        padding: 12,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        boxWidth: 8,
+                        font: {
+                            family: "'Fira Code', monospace",
+                            size: 10
+                        }
+                    }
+                },
+                tooltip: {
+                    // Posiciona tooltip para fora do gráfico donut
+                    position: 'average',
+                    xAlign: 'center',
+                    yAlign: 'bottom',
+                    caretPadding: 10,
+                    backgroundColor: 'rgba(10, 25, 47, 0.95)',
+                    borderColor: '#00f0ff',
+                    borderWidth: 1,
+                    titleFont: {
+                        family: "'Inter', sans-serif",
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        family: "'Fira Code', monospace",
+                        size: 13
+                    },
+                    padding: 12,
+                    // Posicionamento externo customizado - segue cursor e abre para fora
+                    external: function(context) {
+                        // Tooltip element
+                        let tooltipEl = document.getElementById('chartjs-tooltip-categorias');
+
+                        // Create element on first render
+                        if (!tooltipEl) {
+                            tooltipEl = document.createElement('div');
+                            tooltipEl.id = 'chartjs-tooltip-categorias';
+                            tooltipEl.innerHTML = '<div class="tooltip-content"></div>';
+                            document.body.appendChild(tooltipEl);
+                        }
+
+                        // Hide if no tooltip
+                        const tooltipModel = context.tooltip;
+                        if (tooltipModel.opacity === 0) {
+                            tooltipEl.style.opacity = 0;
+                            return;
+                        }
+
+                        // Set Text
+                        if (tooltipModel.body) {
+                            const titleLines = tooltipModel.title || [];
+                            const bodyLines = tooltipModel.body.map(b => b.lines);
+
+                            let innerHtml = '';
+
+                            titleLines.forEach(function(title) {
+                                innerHtml += '<div class="tooltip-title">' + title + '</div>';
+                            });
+
+                            bodyLines.forEach(function(body, i) {
+                                const colors = tooltipModel.labelColors[i];
+                                const style = 'background:' + colors.backgroundColor + ';width:10px;height:10px;display:inline-block;margin-right:6px;border-radius:2px';
+                                innerHtml += '<div class="tooltip-body"><span style="' + style + '"></span>' + body + '</div>';
+                            });
+
+                            tooltipEl.querySelector('.tooltip-content').innerHTML = innerHtml;
+                        }
+
+                        // Posição do canvas e centro do gráfico
+                        const position = context.chart.canvas.getBoundingClientRect();
+                        const chartCenterX = position.left + position.width / 2;
+                        const chartCenterY = position.top + position.height / 2;
+
+                        // Posição do cursor (caret do tooltip)
+                        const caretX = position.left + tooltipModel.caretX;
+                        const caretY = position.top + tooltipModel.caretY;
+
+                        // Calcular direção do cursor em relação ao centro (para abrir para fora)
+                        const deltaX = caretX - chartCenterX;
+                        const deltaY = caretY - chartCenterY;
+
+                        // Offset para empurrar tooltip para fora do gráfico
+                        const offsetDistance = 20;
+                        const angle = Math.atan2(deltaY, deltaX);
+                        const offsetX = Math.cos(angle) * offsetDistance;
+                        const offsetY = Math.sin(angle) * offsetDistance;
+
+                        // Posição final do tooltip
+                        let finalX = caretX + offsetX + window.pageXOffset;
+                        let finalY = caretY + offsetY + window.pageYOffset;
+
+                        // Ajustar transform baseado na posição (para abrir para fora)
+                        let transformX = '-50%';
+                        let transformY = '-50%';
+
+                        if (deltaX > 0) {
+                            transformX = '0%'; // Tooltip à direita do cursor
+                        } else {
+                            transformX = '-100%'; // Tooltip à esquerda do cursor
+                        }
+
+                        if (deltaY > 0) {
+                            transformY = '0%'; // Tooltip abaixo do cursor
+                        } else {
+                            transformY = '-100%'; // Tooltip acima do cursor
+                        }
+
+                        tooltipEl.style.opacity = 1;
+                        tooltipEl.style.position = 'absolute';
+                        tooltipEl.style.left = finalX + 'px';
+                        tooltipEl.style.top = finalY + 'px';
+                        tooltipEl.style.transform = 'translate(' + transformX + ', ' + transformY + ')';
+                        tooltipEl.style.pointerEvents = 'none';
+                        tooltipEl.style.zIndex = '9999';
+                        tooltipEl.style.transition = 'opacity 0.1s ease';
+                    },
+                    enabled: false, // Desabilita tooltip padrão, usamos o externo
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = ((value / total) * 100).toFixed(1);
+                            return ` R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2})} (${pct}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '55%'
+        }
+    });
+
+    // Configurar toggle da legenda
+    const toggleBtn = document.getElementById('toggleLegenda');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', toggleLegenda);
+    }
+}
+
+function toggleLegenda() {
+    if (!chartCategorias) return;
+
+    legendaVisivel = !legendaVisivel;
+    chartCategorias.options.plugins.legend.display = legendaVisivel;
+    chartCategorias.update();
+
+    // Atualizar visual do botão
+    const toggleBtn = document.getElementById('toggleLegenda');
+    if (toggleBtn) {
+        toggleBtn.classList.toggle('active', legendaVisivel);
+    }
+}
+
+async function initMensalChart() {
+    const ctx = document.getElementById('chartMensal');
+    if (!ctx) return;
+
+    try {
+        const response = await fetch('/api/historico-mensal');
+        const historico = await response.json();
+
+        if (!historico.length) return;
+
+        const labels = historico.map(h => h.mes_label);
+        const valores = historico.map(h => h.total);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Gasto',
+                    data: valores,
+                    backgroundColor: function(context) {
+                        const chart = context.chart;
+                        const {ctx, chartArea} = chart;
+                        if (!chartArea) return '#00f0ff';
+
+                        // Gradiente vertical
+                        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                        gradient.addColorStop(0, 'rgba(0, 240, 255, 0.3)');
+                        gradient.addColorStop(1, 'rgba(0, 240, 255, 0.8)');
+                        return gradient;
+                    },
+                    borderColor: '#00f0ff',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(10, 25, 47, 0.95)',
+                        borderColor: '#00f0ff',
+                        borderWidth: 1,
+                        titleFont: {
+                            family: "'Inter', sans-serif"
+                        },
+                        bodyFont: {
+                            family: "'Fira Code', monospace"
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return ` R$ ${context.raw.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                family: "'Fira Code', monospace",
+                                size: 11
+                            }
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(100, 255, 218, 0.1)'
+                        },
+                        ticks: {
+                            font: {
+                                family: "'Fira Code', monospace",
+                                size: 10
+                            },
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao carregar histórico mensal:', error);
+    }
+}
+
+async function initRecorrenciaChart() {
+    const ctx = document.getElementById('chartRecorrencia');
+    if (!ctx) return;
+
+    try {
+        const response = await fetch('/api/historico-recorrencia');
+        const historico = await response.json();
+
+        if (!historico.length) return;
+
+        const labels = historico.map(h => h.mes_label);
+        const recorrentes = historico.map(h => h.recorrente);
+        const variaveis = historico.map(h => h.variavel);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Recorrente',
+                        data: recorrentes,
+                        backgroundColor: function(context) {
+                            const chart = context.chart;
+                            const {ctx, chartArea} = chart;
+                            if (!chartArea) return '#ff8c32';
+                            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                            gradient.addColorStop(0, 'rgba(255, 140, 50, 0.3)');
+                            gradient.addColorStop(1, 'rgba(255, 140, 50, 0.8)');
+                            return gradient;
+                        },
+                        borderColor: '#ff8c32',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Variável',
+                        data: variaveis,
+                        backgroundColor: function(context) {
+                            const chart = context.chart;
+                            const {ctx, chartArea} = chart;
+                            if (!chartArea) return '#00f0ff';
+                            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                            gradient.addColorStop(0, 'rgba(0, 240, 255, 0.3)');
+                            gradient.addColorStop(1, 'rgba(0, 240, 255, 0.8)');
+                            return gradient;
+                        },
+                        borderColor: '#00f0ff',
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#8892b0',
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            font: { family: "'Fira Code', monospace", size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(10, 25, 47, 0.95)',
+                        borderColor: '#00f0ff',
+                        borderWidth: 1,
+                        titleFont: { family: "'Inter', sans-serif" },
+                        bodyFont: { family: "'Fira Code', monospace" },
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.dataset.label}: R$ ${context.raw.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: { display: false },
+                        ticks: { color: '#8892b0', font: { family: "'Fira Code', monospace", size: 11 } }
+                    },
+                    y: {
+                        stacked: true,
+                        grid: { color: 'rgba(100, 255, 218, 0.1)' },
+                        ticks: {
+                            color: '#8892b0',
+                            font: { family: "'Fira Code', monospace", size: 10 },
+                            callback: function(value) { return 'R$ ' + value.toLocaleString('pt-BR'); }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao carregar gráfico de recorrência:', error);
+    }
+}
+
+async function initTendenciaChart() {
+    const ctx = document.getElementById('chartTendencia');
+    if (!ctx || !mesSelecionado) return;
+
+    try {
+        const response = await fetch(`/api/evolucao-diaria/${mesSelecionado}`);
+        const data = await response.json();
+
+        const dias = Array.from({length: 31}, (_, i) => i + 1);
+        const valoresAtual = data.atual.map(d => d.valor);
+        const valoresAnterior = data.anterior.map(d => d.valor);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dias,
+                datasets: [
+                    {
+                        label: data.mes_atual_label,
+                        data: valoresAtual,
+                        borderColor: '#00f0ff', // Neon Blue
+                        backgroundColor: 'rgba(0, 240, 255, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: data.mes_anterior_label,
+                        data: valoresAnterior,
+                        borderColor: '#ff8c32', // Laranja sólido
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        pointHoverRadius: 0,
+                        fill: false,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            color: '#8892b0',
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            font: { family: "'Fira Code', monospace", size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(10, 25, 47, 0.95)',
+                        borderColor: '#00f0ff',
+                        borderWidth: 1,
+                        titleFont: { family: "'Inter', sans-serif" },
+                        bodyFont: { family: "'Fira Code', monospace" },
+                        callbacks: {
+                            title: function(context) {
+                                return `Dia ${context[0].label}`;
+                            },
+                            label: function(context) {
+                                return ` ${context.dataset.label}: R$ ${context.raw.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { 
+                            color: '#8892b0', 
+                            font: { family: "'Fira Code', monospace", size: 11 },
+                            maxTicksLimit: 10
+                        }
+                    },
+                    y: {
+                        grid: { color: 'rgba(100, 255, 218, 0.1)' },
+                        ticks: {
+                            color: '#8892b0',
+                            font: { family: "'Fira Code', monospace", size: 10 },
+                            callback: function(value) { return 'R$ ' + value.toLocaleString('pt-BR'); }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao carregar gráfico de tendência:', error);
+    }
+}
+
+// ============================================================================
+// GASTOS RECORRENTES
+// ============================================================================
+
+async function loadRecorrentes() {
+    const container = document.getElementById('recorrentesContent');
+    if (!container || !mesSelecionado) return;
+
+    try {
+        const response = await fetch(`/api/recorrentes/${mesSelecionado}`);
+        const data = await response.json();
+
+        if (data.recorrentes.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state-small">
+                    <p>Nenhum gasto recorrente neste mês.</p>
+                    <p class="text-small text-muted">Gastos são considerados recorrentes quando aparecem em 2+ meses.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `
+            <div class="recorrentes-summary">
+                <div class="summary-item">
+                    <span class="summary-label">Recorrentes neste mês</span>
+                    <span class="summary-value">R$ ${data.total_recorrentes.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">% do Total</span>
+                    <span class="summary-value">${data.percentual.toFixed(0)}%</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Itens</span>
+                    <span class="summary-value">${data.quantidade}</span>
+                </div>
+            </div>
+            <div class="recorrentes-list">
+        `;
+
+        const renderGroup = (title, items, total, groupType) => `
+            <div class="recorrentes-group" data-group-type="${groupType}">
+                <div class="recorrentes-group-header" onclick="this.parentElement.classList.toggle('expanded')">
+                    <span class="expand-icon">▶</span>
+                    <span class="group-title">${title}</span>
+                    <span class="group-total">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div class="recorrentes-group-content">
+                    <table class="transactions-table sortable recorrentes-draggable">
+                        <thead>
+                            <tr>
+                                <th style="width: 28px;"></th>
+                                <th data-sort="string" style="cursor: pointer;">Descrição <span class="sort-icon">↕</span></th>
+                                <th data-sort="string" style="cursor: pointer;">Categoria <span class="sort-icon">↕</span></th>
+                                <th data-sort="string" style="cursor: pointer;">Parcela <span class="sort-icon">↕</span></th>
+                                <th data-sort="number" style="text-align: right; cursor: pointer;">Valor <span class="sort-icon">↕</span></th>
+                                <th style="width: 40px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="drag-container">
+                            ${items.map(r => {
+                                // Verificar se há variação significativa (>10%)
+                                const temVariacao = r.variacao_pct !== null && Math.abs(r.variacao_pct) > 10;
+                                const variacaoPositiva = r.variacao_pct > 0;
+                                let alertaHtml = '';
+
+                                if (temVariacao) {
+                                    const classe = variacaoPositiva ? 'alerta-aumento' : 'alerta-reducao';
+                                    const textoVariacao = variacaoPositiva
+                                        ? `Aumento de R$ ${Math.abs(r.variacao).toFixed(2)} (+${r.variacao_pct.toFixed(0)}%) comparado ao mês anterior`
+                                        : `Redução de R$ ${Math.abs(r.variacao).toFixed(2)} (-${Math.abs(r.variacao_pct).toFixed(0)}%) comparado ao mês anterior`;
+                                    alertaHtml = `<span class="badge-variacao ${classe}" data-tooltip="${textoVariacao}">!</span>`;
+                                }
+
+                                return `
+                                <tr data-descricao="${r.descricao.replace(/"/g, '&quot;')}"
+                                    data-categoria="${(r.categoria || '').replace(/"/g, '&quot;')}"
+                                    data-valor="${r.valor}"
+                                    draggable="true" class="draggable-row">
+                                    <td class="drag-handle" title="Arraste para reordenar">⠿</td>
+                                    <td class="tx-desc" title="${r.descricao}">
+                                        ${r.descricao}
+                                        ${r.manual ? '<span class="badge-manual" title="Adicionado manualmente">*</span>' : ''}
+                                        ${alertaHtml}
+                                    </td>
+                                    <td class="tx-cat editable-cat" data-categoria="${r.categoria || ''}">${r.categoria || ''}</td>
+                                    <td class="tx-parcela">${r.parcela || 'Única'}</td>
+                                    <td class="tx-value ${r.valor < 0 ? 'negative' : 'positive'}" data-val="${r.valor}">
+                                        ${r.valor.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}
+                                    </td>
+                                    <td class="tx-actions">
+                                        <button class="btn-icon btn-danger btn-ignorar" title="Ignorar este recorrente">✕</button>
+                                    </td>
+                                </tr>
+                            `}).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        if (data.mensais && data.mensais.length > 0) {
+             const totalMensais = data.mensais.reduce((acc, curr) => acc + curr.valor, 0);
+             html += renderGroup('Mensalidades / Assinaturas', data.mensais, totalMensais, 'mensais');
+        }
+
+        if (data.parcelas && data.parcelas.length > 0) {
+             const totalParcelas = data.parcelas.reduce((acc, curr) => acc + curr.valor, 0);
+             html += renderGroup('Parcelamentos', data.parcelas, totalParcelas, 'parcelas');
+        }
+
+        // Fallback para API antiga ou caso vazio
+        if ((!data.mensais || data.mensais.length === 0) && (!data.parcelas || data.parcelas.length === 0) && data.recorrentes.length > 0) {
+             // Render as a single group if no separation
+             const total = data.recorrentes.reduce((acc, curr) => acc + curr.valor, 0);
+             html += renderGroup('Outros Recorrentes', data.recorrentes, total, 'outros');
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+
+        // Initialize sorting for all new tables
+        container.querySelectorAll('table').forEach(table => {
+            if (window.initTableSorting) {
+                window.initTableSorting(table);
+            }
+        });
+
+        // Inicializar drag and drop
+        inicializarDragDrop();
+
+        // Adicionar listeners para botões de ignorar
+        container.querySelectorAll('.btn-ignorar').forEach(btn => {
+            btn.addEventListener('click', async function(e) {
+                e.stopPropagation();
+                const row = this.closest('tr');
+                const descricao = row.dataset.descricao;
+
+                if (!confirm(`Ignorar "${descricao}" da lista de recorrentes?\n\nVocê pode restaurar depois em Configurações.`)) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/recorrentes/ignorar', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({descricao: descricao})
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showToast('Recorrente ignorado!');
+                        loadRecorrentes();
+                    } else {
+                        showToast(result.error || 'Erro ao ignorar', 'error');
+                    }
+                } catch (error) {
+                    showToast('Erro de conexão', 'error');
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('Erro ao carregar recorrentes:', error);
+        container.innerHTML = '<p class="text-muted">Erro ao carregar dados.</p>';
+    }
+}
+
+// Modal de adicionar recorrente
+let descricoesCacheadas = [];
+
+async function carregarDescricoes() {
+    if (descricoesCacheadas.length === 0) {
+        try {
+            const response = await fetch('/api/descricoes');
+            descricoesCacheadas = await response.json();
+        } catch (error) {
+            console.error('Erro ao carregar descrições:', error);
+        }
+    }
+    return descricoesCacheadas;
+}
+
+function configurarAutocomplete() {
+    const input = document.getElementById('recorrenteDescricao');
+    const dropdown = document.getElementById('recorrenteDescricaoSugestoes');
+    if (!input || !dropdown) return;
+
+    let selectedIndex = -1;
+
+    input.addEventListener('input', async function() {
+        const valor = this.value.toLowerCase().trim();
+        dropdown.innerHTML = '';
+        selectedIndex = -1;
+
+        if (valor.length < 2) {
+            dropdown.classList.add('hidden');
+            return;
+        }
+
+        const descricoes = await carregarDescricoes();
+        const filtrados = descricoes.filter(d =>
+            d.descricao.toLowerCase().includes(valor) ||
+            (d.descricao_normalizada && d.descricao_normalizada.toLowerCase().includes(valor))
+        ).slice(0, 10);
+
+        if (filtrados.length === 0) {
+            dropdown.classList.add('hidden');
+            return;
+        }
+
+        filtrados.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-item';
+            div.innerHTML = `
+                <span class="autocomplete-desc">${item.descricao}</span>
+                <span class="autocomplete-info">
+                    ${item.categoria ? `<span class="autocomplete-cat">${item.categoria}</span>` : ''}
+                    ${item.valor_exemplo ? `<span class="autocomplete-val">R$ ${Math.abs(item.valor_exemplo).toFixed(2)}</span>` : ''}
+                </span>
+            `;
+            div.addEventListener('click', () => selecionarSugestao(item));
+            div.dataset.index = index;
+            dropdown.appendChild(div);
+        });
+
+        dropdown.classList.remove('hidden');
+    });
+
+    input.addEventListener('keydown', function(e) {
+        const items = dropdown.querySelectorAll('.autocomplete-item');
+        if (items.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+            atualizarSelecao(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, 0);
+            atualizarSelecao(items);
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+            e.preventDefault();
+            items[selectedIndex].click();
+        } else if (e.key === 'Escape') {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    function atualizarSelecao(items) {
+        items.forEach((item, i) => {
+            item.classList.toggle('selected', i === selectedIndex);
+        });
+    }
+
+    // Fechar dropdown ao clicar fora
+    document.addEventListener('click', function(e) {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
+function selecionarSugestao(item) {
+    document.getElementById('recorrenteDescricao').value = item.descricao;
+    document.getElementById('recorrenteDescricaoSugestoes').classList.add('hidden');
+
+    // Preencher categoria se disponível
+    if (item.categoria) {
+        const selectCat = document.getElementById('recorrenteCategoria');
+        const option = Array.from(selectCat.options).find(o => o.value === item.categoria);
+        if (option) selectCat.value = item.categoria;
+    }
+
+    // Preencher valor se disponível
+    if (item.valor_exemplo) {
+        document.getElementById('recorrenteValor').value = Math.abs(item.valor_exemplo).toFixed(2);
+    }
+}
+
+function abrirModalRecorrente() {
+    document.getElementById('recorrenteDescricao').value = '';
+    document.getElementById('recorrenteValor').value = '';
+    document.getElementById('recorrenteTipo').value = 'mensal';
+    document.getElementById('recorrenteFeedback').textContent = '';
+    document.getElementById('recorrenteDescricaoSugestoes').classList.add('hidden');
+
+    // Carregar categorias no select
+    const select = document.getElementById('recorrenteCategoria');
+    select.innerHTML = '<option value="">Selecione...</option>';
+
+    fetch('/api/categorias')
+        .then(r => r.json())
+        .then(cats => {
+            Object.keys(cats).forEach(cat => {
+                select.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+        });
+
+    // Pré-carregar descrições para autocomplete
+    carregarDescricoes();
+
+    document.getElementById('modalRecorrente').classList.remove('hidden');
+    document.getElementById('recorrenteDescricao').focus();
+}
+
+function fecharModalRecorrente() {
+    document.getElementById('modalRecorrente').classList.add('hidden');
+    document.getElementById('recorrenteDescricaoSugestoes').classList.add('hidden');
+}
+
+// Função para abrir modal pré-preenchido (chamada pelo drag and drop)
+async function abrirModalRecorrentePreenchido(data) {
+    // Primeiro abrir o modal normalmente para carregar categorias
+    document.getElementById('recorrenteDescricao').value = '';
+    document.getElementById('recorrenteValor').value = '';
+    document.getElementById('recorrenteTipo').value = 'mensal';
+    document.getElementById('recorrenteFeedback').textContent = '';
+    document.getElementById('recorrenteDescricaoSugestoes').classList.add('hidden');
+
+    const select = document.getElementById('recorrenteCategoria');
+    select.innerHTML = '<option value="">Selecione...</option>';
+
+    try {
+        const response = await fetch('/api/categorias');
+        const cats = await response.json();
+        Object.keys(cats).forEach(cat => {
+            select.innerHTML += `<option value="${cat}">${cat}</option>`;
+        });
+    } catch (e) {
+        console.error('Erro ao carregar categorias:', e);
+    }
+
+    // Preencher com dados do drag
+    if (data.descricao) {
+        document.getElementById('recorrenteDescricao').value = data.descricao;
+    }
+    if (data.categoria) {
+        select.value = data.categoria;
+    }
+    if (data.valor) {
+        document.getElementById('recorrenteValor').value = Math.abs(data.valor).toFixed(2);
+    }
+
+    // Mostrar feedback de que veio do drag
+    const feedback = document.getElementById('recorrenteFeedback');
+    feedback.className = 'feedback-message success';
+    feedback.textContent = '✓ Arrastado da lista de transações. Confirme para adicionar.';
+
+    document.getElementById('modalRecorrente').classList.remove('hidden');
+    document.getElementById('recorrenteValor').focus();
+}
+
+// Expor função globalmente para o main.js
+window.abrirModalRecorrentePreenchido = abrirModalRecorrentePreenchido;
+
+async function salvarRecorrente() {
+    const descricao = document.getElementById('recorrenteDescricao').value.trim();
+    const categoria = document.getElementById('recorrenteCategoria').value;
+    const valor = parseFloat(document.getElementById('recorrenteValor').value) || null;
+    const tipo = document.getElementById('recorrenteTipo').value;
+    const feedback = document.getElementById('recorrenteFeedback');
+
+    if (!descricao) {
+        feedback.className = 'feedback-message error';
+        feedback.textContent = 'Descrição é obrigatória';
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/recorrentes/adicionar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({descricao, categoria, valor, tipo})
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Recorrente adicionado!');
+            fecharModalRecorrente();
+            loadRecorrentes();
+        } else {
+            feedback.className = 'feedback-message error';
+            feedback.textContent = result.error || 'Erro ao adicionar';
+        }
+    } catch (error) {
+        feedback.className = 'feedback-message error';
+        feedback.textContent = 'Erro de conexão';
+    }
+}
+
+// ============================================
+// Drag and Drop para Recorrentes
+// ============================================
+
+let draggedRow = null;
+
+function inicializarDragDrop() {
+    const containers = document.querySelectorAll('.drag-container');
+
+    containers.forEach(container => {
+        const rows = container.querySelectorAll('.draggable-row');
+
+        rows.forEach(row => {
+            row.addEventListener('dragstart', handleDragStart);
+            row.addEventListener('dragend', handleDragEnd);
+            row.addEventListener('dragover', handleDragOver);
+            row.addEventListener('dragenter', handleDragEnter);
+            row.addEventListener('dragleave', handleDragLeave);
+            row.addEventListener('drop', handleDrop);
+        });
+    });
+}
+
+function handleDragStart(e) {
+    draggedRow = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+
+    // Adicionar indicador visual ao arrastar
+    setTimeout(() => {
+        this.style.opacity = '0.4';
+    }, 0);
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    this.style.opacity = '1';
+
+    // Remover classes de todos os elementos
+    document.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+    });
+
+    draggedRow = null;
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragEnter(e) {
+    if (this !== draggedRow && this.classList.contains('draggable-row')) {
+        this.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (draggedRow !== this && this.classList.contains('draggable-row')) {
+        const tbody = this.parentNode;
+        const rows = Array.from(tbody.querySelectorAll('.draggable-row'));
+        const draggedIndex = rows.indexOf(draggedRow);
+        const targetIndex = rows.indexOf(this);
+
+        if (draggedIndex < targetIndex) {
+            // Movendo para baixo
+            tbody.insertBefore(draggedRow, this.nextSibling);
+        } else {
+            // Movendo para cima
+            tbody.insertBefore(draggedRow, this);
+        }
+
+        showToast('Ordem atualizada!', 'success');
+    }
+
+    this.classList.remove('drag-over');
+    return false;
+}
+
+// Inicializar recorrentes
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecorrentes();
+    configurarAutocomplete();
+
+    const refreshBtn = document.getElementById('refreshRecorrentes');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', loadRecorrentes);
+    }
+
+    const addBtn = document.getElementById('btnAdicionarRecorrente');
+    if (addBtn) {
+        addBtn.addEventListener('click', abrirModalRecorrente);
+    }
+
+    // Fechar modal com ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            fecharModalRecorrente();
+        }
+    });
+});
+</script>
+{% endblock %}

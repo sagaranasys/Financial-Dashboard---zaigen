@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Upload - zaigen{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Importar Faturas</h1>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">◂ Voltar</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Upload de Arquivos</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">⬆</div>
+                    <h3>Arraste arquivos ZIP aqui</h3>
+                    <p>ou clique para selecionar</p>
+                    <input type="file" name="arquivo" id="arquivo" accept=".zip" multiple class="file-input">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('arquivo').click()">
+                        Selecionar Arquivos
+                    </button>
+                </div>
+
+                <div id="filesList" class="files-list"></div>
+
+                <div class="upload-info">
+                    <p><strong>Formato:</strong> Arquivos .zip (C6 Bank)</p>
+                    <p><strong>Múltiplos:</strong> Sim, envie vários de uma vez</p>
+                    <p><strong>Limite:</strong> 5MB por arquivo</p>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="btnSubmit" disabled>
+                    ▶ Processar Arquivos
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% if historico %}
+    <div class="card">
+        <div class="card-header">
+            <h3>Histórico de Importações</h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Arquivo</th>
+                        <th>Período</th>
+                        <th class="text-right">Transações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for upload in historico %}
+                    <tr>
+                        <td>{{ upload.data_upload[:10] }}</td>
+                        <td>{{ upload.nome_arquivo }}</td>
+                        <td>{{ upload.mes_referencia }}</td>
+                        <td class="text-right">{{ upload.num_transacoes }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Handler de arquivos
+const fileInput = document.getElementById('arquivo');
+const filesList = document.getElementById('filesList');
+const btnSubmit = document.getElementById('btnSubmit');
+const uploadArea = document.getElementById('uploadArea');
+
+fileInput.addEventListener('change', function() {
+    updateFilesList();
+});
+
+// Drag and drop
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('drag-over');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('drag-over');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('drag-over');
+    fileInput.files = e.dataTransfer.files;
+    updateFilesList();
+});
+
+function updateFilesList() {
+    const files = fileInput.files;
+    
+    if (files.length === 0) {
+        filesList.innerHTML = '';
+        btnSubmit.disabled = true;
+        return;
+    }
+    
+    let html = '<div class="selected-files"><h4>Arquivos selecionados:</h4><ul>';
+    
+    for (let file of files) {
+        html += `<li>📄 ${file.name} (${formatFileSize(file.size)})</li>`;
+    }
+    
+    html += '</ul></div>';
+    filesList.innerHTML = html;
+    btnSubmit.disabled = false;
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+</script>
+{% endblock %}

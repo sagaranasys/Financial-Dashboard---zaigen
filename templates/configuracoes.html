@@ -1,0 +1,1024 @@
+{% extends "base.html" %}
+
+{% block title %}Configurações - zaigen{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Configurações</h1>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">◂ Voltar</a>
+    </div>
+
+    <!-- Seção Categorias (Colapsável) -->
+    <div class="card collapsible-card">
+        <div class="card-header collapsible-header" onclick="toggleCollapsible(this)">
+            <div class="collapsible-title">
+                <span class="collapsible-icon">▶</span>
+                <h3>Categorias</h3>
+                <span class="collapsible-badge">{{ todas_categorias|length }} categorias</span>
+            </div>
+            <span class="text-muted text-small">Clique para expandir</span>
+        </div>
+        <div class="card-body collapsible-content hidden">
+            <div class="section-header">
+                <p class="text-muted">Gerencie suas categorias de gastos. Categorias personalizadas são adicionadas às padrão do sistema.</p>
+                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); abrirModalCategoria()">+ Nova Categoria</button>
+            </div>
+
+            <div class="categoria-section">
+                <p class="text-muted text-small">Clique em ✎ para editar qualquer categoria. Categorias padrão editadas são salvas como personalizadas.</p>
+                <div class="categorias-grid">
+                    {% for cat in todas_categorias %}
+                    <div class="categoria-item {% if cat.personalizada %}categoria-custom{% else %}categoria-padrao{% endif %}"
+                         data-id="{{ cat.id or '' }}"
+                         data-nome="{{ cat.nome }}"
+                         data-subcategorias="{{ cat.subcategorias|tojson|e }}">
+                        <div class="categoria-header">
+                            <span class="categoria-nome">
+                                {{ cat.nome }}
+                                {% if cat.personalizada %}<span class="badge-custom" title="Personalizada">✦</span>{% endif %}
+                            </span>
+                            <div class="categoria-actions">
+                                <button class="btn-icon btn-editar" title="Editar">✎</button>
+                                {% if cat.personalizada %}
+                                <button class="btn-icon btn-danger btn-excluir" title="Excluir">✕</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="categoria-subcats">{{ cat.subcategorias|join(', ') or 'Sem subcategorias' }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção Recorrentes e Parcelamentos (Colapsável) -->
+    <div class="card collapsible-card">
+        <div class="card-header collapsible-header" onclick="toggleCollapsible(this)">
+            <div class="collapsible-title">
+                <span class="collapsible-icon">▶</span>
+                <h3>Recorrentes e Parcelamentos</h3>
+                <span class="collapsible-badge">Manuais</span>
+            </div>
+            <span class="text-muted text-small">Clique para expandir</span>
+        </div>
+        <div class="card-body collapsible-content hidden">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="event.stopPropagation(); openTab(event, 'tab-parcelamentos')">Parcelamentos</button>
+                <button class="tab-btn" onclick="event.stopPropagation(); openTab(event, 'tab-recorrentes')">Recorrentes</button>
+            </div>
+
+            <!-- Tab Parcelamentos -->
+            <div id="tab-parcelamentos" class="tab-content active">
+                <div class="section-header">
+                    <p class="text-muted">Adicione parcelamentos que não constam no extrato (ex: compras em dinheiro parceladas).</p>
+                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); abrirModalParcelamento()">+ Novo Parcelamento</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="tabela-parcelamentos">
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th class="text-right">Valor Total</th>
+                                <th class="text-center">Parcelas</th>
+                                <th>Início</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Recorrentes -->
+            <div id="tab-recorrentes" class="tab-content">
+                <div class="section-header">
+                    <p class="text-muted">Adicione gastos recorrentes fixos que não constam no extrato.</p>
+                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); abrirModalRecorrente()">+ Novo Recorrente</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="tabela-recorrentes">
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th class="text-right">Valor Estimado</th>
+                                <th class="text-center">Tipo</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção Mapeamento de Descrições (Colapsável) -->
+    <div class="card collapsible-card">
+        <div class="card-header collapsible-header" onclick="toggleCollapsible(this)">
+            <div class="collapsible-title">
+                <span class="collapsible-icon">▶</span>
+                <h3>Mapeamento de Descrições</h3>
+                <span class="collapsible-badge" id="badge-mapeamentos">0 regras</span>
+            </div>
+            <span class="text-muted text-small">Clique para expandir</span>
+        </div>
+        <div class="card-body collapsible-content hidden">
+            <div class="section-header">
+                <p class="text-muted">Renomeie descrições confusas do extrato para nomes mais legíveis. Regras são aplicadas automaticamente em novas importações.</p>
+            </div>
+            <div class="table-responsive">
+                <table class="table" id="tabela-mapeamentos">
+                    <thead>
+                        <tr>
+                            <th>Descrição Original</th>
+                            <th>→</th>
+                            <th>Descrição Customizada</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção Regras de Categorização (Colapsável) -->
+    <div class="card collapsible-card">
+        <div class="card-header collapsible-header" onclick="toggleCollapsible(this)">
+            <div class="collapsible-title">
+                <span class="collapsible-icon">▶</span>
+                <h3>Regras de Categorização</h3>
+                <span class="collapsible-badge" id="badge-regras">0 regras</span>
+            </div>
+            <span class="text-muted text-small">Clique para expandir</span>
+        </div>
+        <div class="card-body collapsible-content hidden">
+            <div class="section-header">
+                <p class="text-muted">Configure regras para categorizar automaticamente transações. Use padrões como "IFD*" para match parcial ou descrições exatas.</p>
+                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); abrirModalRegra()">+ Nova Regra</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table" id="tabela-regras">
+                    <thead>
+                        <tr>
+                            <th>Padrão</th>
+                            <th>Categoria</th>
+                            <th>Subcategoria</th>
+                            <th class="text-center">Usos</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nova Regra de Categorização -->
+<div id="modalRegra" class="modal hidden" role="dialog" aria-labelledby="modalRegraTitle" aria-modal="true">
+    <div class="modal-overlay" onclick="fecharModalRegra()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalRegraTitle">Nova Regra de Categorização</h3>
+            <button class="btn-close" onclick="fecharModalRegra()" aria-label="Fechar modal">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="regraId">
+            <div class="form-group">
+                <label>Padrão de Descrição</label>
+                <input type="text" id="regraPadrao" class="form-control" placeholder="Ex: IFD* ou NETFLIX">
+                <small class="text-muted">Use * para match parcial (ex: IFD* casa com IFOOD, IFD BURGUER, etc)</small>
+            </div>
+            <div class="form-group">
+                <label>Categoria</label>
+                <select id="regraCategoria" class="form-control" onchange="atualizarSubcategoriasRegra()">
+                    <!-- Preenchido via JS -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Subcategoria</label>
+                <select id="regraSubcategoria" class="form-control">
+                    <option value="">Nenhuma</option>
+                    <!-- Preenchido dinamicamente -->
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModalRegra()">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarRegra()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Parcelamento -->
+<div id="modalParcelamento" class="modal hidden" role="dialog" aria-labelledby="modalParcelamentoTitle" aria-modal="true">
+    <div class="modal-overlay" onclick="fecharModalParcelamento()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalParcelamentoTitle">Novo Parcelamento Manual</h3>
+            <button class="btn-close" onclick="fecharModalParcelamento()" aria-label="Fechar modal">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Descrição</label>
+                <input type="text" id="parcDescricao" class="form-control" placeholder="Ex: Empréstimo Amigo">
+            </div>
+            <div class="form-group">
+                <label>Categoria</label>
+                <select id="parcCategoria" class="form-control">
+                    <!-- Preenchido via JS -->
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group col">
+                    <label>Valor Total (R$)</label>
+                    <input type="number" id="parcValor" class="form-control" step="0.01">
+                </div>
+                <div class="form-group col">
+                    <label>Qtd Parcelas</label>
+                    <input type="number" id="parcQtd" class="form-control" min="1" value="1">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Data da 1ª Parcela</label>
+                <input type="date" id="parcData" class="form-control">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModalParcelamento()">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarParcelamento()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Recorrente -->
+<div id="modalRecorrente" class="modal hidden" role="dialog" aria-labelledby="modalRecorrenteTitle" aria-modal="true">
+    <div class="modal-overlay" onclick="fecharModalRecorrente()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalRecorrenteTitle">Novo Recorrente Manual</h3>
+            <button class="btn-close" onclick="fecharModalRecorrente()" aria-label="Fechar modal">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Descrição</label>
+                <input type="text" id="recDescricao" class="form-control" placeholder="Ex: Aluguel">
+            </div>
+            <div class="form-group">
+                <label>Categoria</label>
+                <select id="recCategoria" class="form-control">
+                    <!-- Preenchido via JS -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Valor Estimado (R$)</label>
+                <input type="number" id="recValor" class="form-control" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="recTipo" class="form-control">
+                    <option value="mensal">Mensal</option>
+                    <option value="anual">Anual</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModalRecorrente()">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarRecorrente()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nova/Editar Categoria -->
+<div id="modalCategoria" class="modal hidden" role="dialog" aria-labelledby="modalTitulo" aria-modal="true">
+    <div class="modal-overlay" onclick="fecharModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitulo">Nova Categoria</h3>
+            <button class="btn-close" onclick="fecharModal()" aria-label="Fechar modal">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="categoriaId">
+            <div class="form-group">
+                <label for="categoriaNome">Nome da Categoria</label>
+                <input type="text" id="categoriaNome" class="form-control" placeholder="Ex: Investimentos">
+            </div>
+            <div class="form-group">
+                <label for="categoriaSubcats">Subcategorias (separadas por vírgula)</label>
+                <input type="text" id="categoriaSubcats" class="form-control" placeholder="Ex: Ações, FIIs, Renda Fixa">
+            </div>
+            <div id="modalFeedback" class="feedback-message"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarCategoria()">Salvar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ============================================================================
+// SEÇÕES COLAPSÁVEIS
+// ============================================================================
+
+function toggleCollapsible(header) {
+    const card = header.closest('.collapsible-card');
+    const content = card.querySelector('.collapsible-content');
+    const icon = header.querySelector('.collapsible-icon');
+    const hint = header.querySelector('.text-small');
+
+    const isExpanded = !content.classList.contains('hidden');
+
+    if (isExpanded) {
+        content.classList.add('hidden');
+        icon.textContent = '▶';
+        icon.classList.remove('expanded');
+        hint.textContent = 'Clique para expandir';
+    } else {
+        content.classList.remove('hidden');
+        icon.textContent = '▼';
+        icon.classList.add('expanded');
+        hint.textContent = 'Clique para recolher';
+
+        // Carregar dados se necessário
+        if (card.querySelector('#tabela-parcelamentos')) {
+            carregarParcelamentos();
+        }
+        if (card.querySelector('#tabela-mapeamentos')) {
+            carregarMapeamentos();
+        }
+    }
+}
+
+// ============================================================================
+// MAPEAMENTO DE DESCRIÇÕES
+// ============================================================================
+
+async function carregarMapeamentos() {
+    const tbody = document.querySelector('#tabela-mapeamentos tbody');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Carregando...</td></tr>';
+
+    try {
+        const response = await fetch('/api/mapeamentos');
+        const data = await response.json();
+
+        // Atualizar badge
+        document.getElementById('badge-mapeamentos').textContent = `${data.length} regra${data.length !== 1 ? 's' : ''}`;
+
+        tbody.innerHTML = '';
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nenhum mapeamento cadastrado. Edite descrições na tabela de transações do Dashboard.</td></tr>';
+            return;
+        }
+
+        data.forEach(m => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="desc-original" title="${m.descricao_original}">${m.descricao_original}</td>
+                <td class="text-center text-muted">→</td>
+                <td class="desc-customizada">${m.descricao_customizada}</td>
+                <td class="text-center">
+                    <button class="btn-icon btn-danger" onclick="excluirMapeamento('${m.descricao_original.replace(/'/g, "\\'")}')" title="Excluir">✕</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erro ao carregar</td></tr>';
+    }
+}
+
+async function excluirMapeamento(descricaoOriginal) {
+    if (!confirm('Remover este mapeamento?\n\nA descrição original será restaurada nas próximas visualizações.')) return;
+
+    try {
+        const response = await fetch('/api/mapeamento-descricao', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ descricao_original: descricaoOriginal })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            carregarMapeamentos();
+            showToast('Mapeamento removido!');
+        } else {
+            showToast('Erro ao remover', 'error');
+        }
+    } catch (e) {
+        showToast('Erro de conexão', 'error');
+    }
+}
+
+// ============================================================================
+// CATEGORIAS
+// ============================================================================
+
+// Dados para edição
+let categoriaEditando = null;
+
+function abrirModalCategoria() {
+    categoriaEditando = null;
+    document.getElementById('modalTitulo').textContent = 'Nova Categoria';
+    document.getElementById('categoriaId').value = '';
+    document.getElementById('categoriaNome').value = '';
+    document.getElementById('categoriaSubcats').value = '';
+    document.getElementById('modalFeedback').textContent = '';
+    document.getElementById('modalCategoria').classList.remove('hidden');
+    document.getElementById('categoriaNome').focus();
+}
+
+function fecharModal() {
+    document.getElementById('modalCategoria').classList.add('hidden');
+}
+
+// Variável para saber se estamos editando uma categoria padrão
+let editandoPadrao = false;
+let nomePadraoOriginal = null;
+
+function editarCategoria(id, nome, subcategorias) {
+    // Se id está vazio, é uma categoria padrão
+    editandoPadrao = !id;
+    nomePadraoOriginal = editandoPadrao ? nome : null;
+    categoriaEditando = id || null;
+
+    document.getElementById('modalTitulo').textContent = editandoPadrao ?
+        'Editar Categoria Padrão' : 'Editar Categoria';
+    document.getElementById('categoriaId').value = id || '';
+    document.getElementById('categoriaNome').value = nome;
+    document.getElementById('categoriaSubcats').value = subcategorias.join(', ');
+    document.getElementById('modalFeedback').textContent = '';
+    document.getElementById('modalCategoria').classList.remove('hidden');
+}
+
+async function salvarCategoria() {
+    const nome = document.getElementById('categoriaNome').value.trim();
+    const subcatsStr = document.getElementById('categoriaSubcats').value.trim();
+    const feedback = document.getElementById('modalFeedback');
+
+    if (!nome) {
+        feedback.className = 'feedback-message error';
+        feedback.textContent = 'Nome é obrigatório';
+        return;
+    }
+
+    const subcategorias = subcatsStr ? subcatsStr.split(',').map(s => s.trim()).filter(s => s) : [];
+
+    let url, method, body;
+
+    if (editandoPadrao) {
+        // Editar categoria padrão = criar/atualizar como personalizada
+        url = '/api/categorias/padrao';
+        method = 'POST';
+        body = JSON.stringify({
+            nome_original: nomePadraoOriginal,
+            nome: nome,
+            subcategorias: subcategorias
+        });
+    } else if (categoriaEditando) {
+        // Editar categoria personalizada existente
+        url = `/api/categorias/${categoriaEditando}`;
+        method = 'PUT';
+        body = JSON.stringify({nome, subcategorias});
+    } else {
+        // Nova categoria
+        url = '/api/categorias';
+        method = 'POST';
+        body = JSON.stringify({nome, subcategorias});
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'},
+            body: body
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            const msg = editandoPadrao ? 'Categoria padrão personalizada!' :
+                       (categoriaEditando ? 'Categoria atualizada!' : 'Categoria criada!');
+            showToast(msg);
+            fecharModal();
+            location.reload();
+        } else {
+            feedback.className = 'feedback-message error';
+            feedback.textContent = result.error || 'Erro ao salvar';
+        }
+    } catch (error) {
+        feedback.className = 'feedback-message error';
+        feedback.textContent = 'Erro de conexão';
+    }
+}
+
+async function excluirCategoria(id, nome) {
+    if (!confirm(`Excluir a categoria "${nome}"?\n\nIsso não é possível se houver transações vinculadas.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/categorias/${id}`, {method: 'DELETE'});
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Categoria excluída!');
+            location.reload();
+        } else {
+            showToast(result.error || 'Erro ao excluir', 'error');
+        }
+    } catch (error) {
+        showToast('Erro de conexão', 'error');
+    }
+}
+
+// Fechar modal com ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') fecharModal();
+});
+
+// Inicializar event listeners quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    // Botões de editar
+    document.querySelectorAll('.btn-editar').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const item = this.closest('.categoria-item');
+            const id = item.dataset.id;
+            const nome = item.dataset.nome;
+            let subcategorias = [];
+            try {
+                subcategorias = JSON.parse(item.dataset.subcategorias || '[]');
+            } catch(e) {
+                subcategorias = [];
+            }
+            editarCategoria(id, nome, subcategorias);
+        });
+    });
+
+    // Botões de excluir
+    document.querySelectorAll('.btn-excluir').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const item = this.closest('.categoria-item');
+            const id = item.dataset.id;
+            const nome = item.dataset.nome;
+            excluirCategoria(id, nome);
+        });
+    });
+    
+    // Carregar parcelamentos inicialmente se a tab estiver ativa (não está por padrão)
+});
+
+// --- Recorrentes e Parcelamentos ---
+
+function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].classList.add('hidden');
+    }
+    tablinks = document.getElementsByClassName("tab-btn");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].classList.remove('active');
+    }
+    document.getElementById(tabName).classList.remove('hidden');
+    evt.currentTarget.classList.add('active');
+
+    if(tabName === 'tab-parcelamentos') carregarParcelamentos();
+    if(tabName === 'tab-recorrentes') carregarRecorrentes();
+}
+
+function formatarData(dataStr) {
+    if(!dataStr) return '-';
+    const parts = dataStr.split('-');
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+async function carregarCategoriasSelect(selectId) {
+    const select = document.getElementById(selectId);
+    if(select.options.length > 1) return; 
+    
+    try {
+        const response = await fetch('/api/categorias');
+        const categorias = await response.json();
+        
+        select.innerHTML = '<option value="">Selecione...</option>';
+        // Ordenar chaves
+        const chaves = Object.keys(categorias).sort();
+        
+        for(const nome of chaves) {
+            const option = document.createElement('option');
+            option.value = nome;
+            option.textContent = nome;
+            select.appendChild(option);
+        }
+    } catch(e) {
+        console.error('Erro ao carregar categorias', e);
+    }
+}
+
+// --- Parcelamentos ---
+
+async function carregarParcelamentos() {
+    const tbody = document.querySelector('#tabela-parcelamentos tbody');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Carregando...</td></tr>';
+    
+    try {
+        const response = await fetch('/api/parcelamentos');
+        const data = await response.json();
+        
+        tbody.innerHTML = '';
+        if(data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Nenhum parcelamento manual cadastrado</td></tr>';
+            return;
+        }
+        
+        data.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${p.descricao}</td>
+                <td>${p.categoria || '<span class="text-muted">—</span>'}</td>
+                <td class="text-right" style="font-family: 'Fira Code', monospace;">R$ ${p.valor_total.toFixed(2)}</td>
+                <td class="text-center"><span class="badge-parcela">${p.qtd_parcelas}x</span></td>
+                <td>${formatarData(p.data_inicio)}</td>
+                <td class="text-center">
+                    <button class="btn-icon btn-danger" onclick="excluirParcelamento(${p.id})" title="Excluir">✕</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Erro ao carregar</td></tr>';
+    }
+}
+
+function abrirModalParcelamento() {
+    document.getElementById('parcDescricao').value = '';
+    document.getElementById('parcValor').value = '';
+    document.getElementById('parcQtd').value = '1';
+    document.getElementById('parcData').value = new Date().toISOString().split('T')[0];
+    carregarCategoriasSelect('parcCategoria');
+    document.getElementById('modalParcelamento').classList.remove('hidden');
+}
+
+function fecharModalParcelamento() {
+    document.getElementById('modalParcelamento').classList.add('hidden');
+}
+
+async function salvarParcelamento() {
+    const descricao = document.getElementById('parcDescricao').value;
+    const categoria = document.getElementById('parcCategoria').value;
+    const valor_total = document.getElementById('parcValor').value;
+    const qtd_parcelas = document.getElementById('parcQtd').value;
+    const data_inicio = document.getElementById('parcData').value;
+    
+    if(!descricao || !valor_total || !qtd_parcelas || !data_inicio) {
+        alert('Preencha todos os campos obrigatórios');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/parcelamentos/adicionar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                descricao, categoria, valor_total, qtd_parcelas, data_inicio
+            })
+        });
+        const result = await response.json();
+        
+        if(result.success) {
+            fecharModalParcelamento();
+            carregarParcelamentos();
+            showToast('Parcelamento adicionado!');
+        } else {
+            alert('Erro: ' + result.error);
+        }
+    } catch(e) {
+        alert('Erro de conexão');
+    }
+}
+
+async function excluirParcelamento(id) {
+    if(!confirm('Tem certeza que deseja excluir este parcelamento?')) return;
+    
+    try {
+        const response = await fetch(`/api/parcelamentos/${id}`, {method: 'DELETE'});
+        const result = await response.json();
+        if(result.success) {
+            carregarParcelamentos();
+            showToast('Parcelamento excluído!');
+        }
+    } catch(e) {
+        alert('Erro ao excluir');
+    }
+}
+
+// --- Recorrentes ---
+
+async function carregarRecorrentes() {
+    const tbody = document.querySelector('#tabela-recorrentes tbody');
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
+    
+    try {
+        const response = await fetch('/api/recorrentes/manuais');
+        const data = await response.json();
+        
+        tbody.innerHTML = '';
+        if(data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhum recorrente manual cadastrado</td></tr>';
+            return;
+        }
+        
+        data.forEach(r => {
+            const tr = document.createElement('tr');
+            const tipoLabel = r.tipo === 'anual' ? 'Anual' : 'Mensal';
+            const tipoClass = r.tipo === 'anual' ? 'badge-anual' : 'badge-mensal';
+            tr.innerHTML = `
+                <td>${r.descricao}</td>
+                <td>${r.categoria || '<span class="text-muted">—</span>'}</td>
+                <td class="text-right" style="font-family: 'Fira Code', monospace;">${r.valor_estimado ? 'R$ ' + r.valor_estimado.toFixed(2) : '<span class="text-muted">—</span>'}</td>
+                <td class="text-center"><span class="badge-tipo ${tipoClass}">${tipoLabel}</span></td>
+                <td class="text-center">
+                    <button class="btn-icon btn-danger" onclick="excluirRecorrenteManual(${r.id})" title="Excluir">✕</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar</td></tr>';
+    }
+}
+
+function abrirModalRecorrente() {
+    document.getElementById('recDescricao').value = '';
+    document.getElementById('recValor').value = '';
+    carregarCategoriasSelect('recCategoria');
+    document.getElementById('modalRecorrente').classList.remove('hidden');
+}
+
+function fecharModalRecorrente() {
+    document.getElementById('modalRecorrente').classList.add('hidden');
+}
+
+async function salvarRecorrente() {
+    const descricao = document.getElementById('recDescricao').value;
+    const categoria = document.getElementById('recCategoria').value;
+    const valor = document.getElementById('recValor').value;
+    const tipo = document.getElementById('recTipo').value;
+    
+    if(!descricao) {
+        alert('Descrição é obrigatória');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/recorrentes/adicionar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                descricao, categoria, valor, tipo
+            })
+        });
+        const result = await response.json();
+        
+        if(result.success) {
+            fecharModalRecorrente();
+            carregarRecorrentes();
+            showToast('Recorrente adicionado!');
+        } else {
+            alert('Erro: ' + result.error);
+        }
+    } catch(e) {
+        alert('Erro de conexão');
+    }
+}
+
+async function excluirRecorrenteManual(id) {
+    if(!confirm('Tem certeza que deseja excluir este recorrente?')) return;
+
+    try {
+        const response = await fetch(`/api/recorrentes/manual/${id}`, {method: 'DELETE'});
+        const result = await response.json();
+        if(result.success) {
+            carregarRecorrentes();
+            showToast('Recorrente excluído!');
+        }
+    } catch(e) {
+        alert('Erro ao excluir');
+    }
+}
+
+// ============================================================================
+// REGRAS DE CATEGORIZAÇÃO
+// ============================================================================
+
+let categoriasData = null;
+
+async function carregarCategoriasParaRegras() {
+    if (categoriasData) return categoriasData;
+
+    try {
+        const response = await fetch('/api/categorias');
+        categoriasData = await response.json();
+        return categoriasData;
+    } catch(e) {
+        console.error('Erro ao carregar categorias:', e);
+        return {};
+    }
+}
+
+async function carregarRegras() {
+    const tbody = document.querySelector('#tabela-regras tbody');
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
+
+    try {
+        const response = await fetch('/api/regras-categorizacao');
+        const data = await response.json();
+
+        // Atualizar badge
+        document.getElementById('badge-regras').textContent = `${data.length} regra${data.length !== 1 ? 's' : ''}`;
+
+        tbody.innerHTML = '';
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhuma regra cadastrada. Adicione regras para categorizar transações automaticamente.</td></tr>';
+            return;
+        }
+
+        data.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="regra-padrao"><code>${r.padrao}</code></td>
+                <td>${r.categoria}</td>
+                <td>${r.subcategoria || '<span class="text-muted">-</span>'}</td>
+                <td class="text-center"><span class="badge-uso">${r.uso_count || 0}</span></td>
+                <td class="text-center">
+                    <button class="btn-icon" onclick="editarRegra(${r.id}, '${r.padrao.replace(/'/g, "\\'")}', '${r.categoria}', '${r.subcategoria || ''}')" title="Editar">✎</button>
+                    <button class="btn-icon btn-danger" onclick="excluirRegra(${r.id})" title="Excluir">✕</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error('Erro ao carregar regras:', e);
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar</td></tr>';
+    }
+}
+
+async function abrirModalRegra() {
+    document.getElementById('regraId').value = '';
+    document.getElementById('regraPadrao').value = '';
+    document.getElementById('modalRegraTitle').textContent = 'Nova Regra de Categorização';
+
+    // Carregar categorias
+    const categorias = await carregarCategoriasParaRegras();
+    const selectCategoria = document.getElementById('regraCategoria');
+    selectCategoria.innerHTML = '<option value="">Selecione...</option>';
+
+    Object.keys(categorias).forEach(cat => {
+        selectCategoria.innerHTML += `<option value="${cat}">${cat}</option>`;
+    });
+
+    document.getElementById('regraSubcategoria').innerHTML = '<option value="">Nenhuma</option>';
+    document.getElementById('modalRegra').classList.remove('hidden');
+    document.getElementById('regraPadrao').focus();
+}
+
+async function editarRegra(id, padrao, categoria, subcategoria) {
+    document.getElementById('regraId').value = id;
+    document.getElementById('regraPadrao').value = padrao;
+    document.getElementById('modalRegraTitle').textContent = 'Editar Regra';
+
+    // Carregar categorias
+    const categorias = await carregarCategoriasParaRegras();
+    const selectCategoria = document.getElementById('regraCategoria');
+    selectCategoria.innerHTML = '<option value="">Selecione...</option>';
+
+    Object.keys(categorias).forEach(cat => {
+        const selected = cat === categoria ? 'selected' : '';
+        selectCategoria.innerHTML += `<option value="${cat}" ${selected}>${cat}</option>`;
+    });
+
+    // Atualizar subcategorias
+    await atualizarSubcategoriasRegra();
+
+    // Selecionar subcategoria
+    if (subcategoria) {
+        document.getElementById('regraSubcategoria').value = subcategoria;
+    }
+
+    document.getElementById('modalRegra').classList.remove('hidden');
+}
+
+async function atualizarSubcategoriasRegra() {
+    const categoria = document.getElementById('regraCategoria').value;
+    const selectSubcat = document.getElementById('regraSubcategoria');
+
+    selectSubcat.innerHTML = '<option value="">Nenhuma</option>';
+
+    if (!categoria) return;
+
+    const categorias = await carregarCategoriasParaRegras();
+    const subcategorias = categorias[categoria] || [];
+
+    subcategorias.forEach(sub => {
+        selectSubcat.innerHTML += `<option value="${sub}">${sub}</option>`;
+    });
+}
+
+function fecharModalRegra() {
+    document.getElementById('modalRegra').classList.add('hidden');
+}
+
+async function salvarRegra() {
+    const id = document.getElementById('regraId').value;
+    const padrao = document.getElementById('regraPadrao').value.trim();
+    const categoria = document.getElementById('regraCategoria').value;
+    const subcategoria = document.getElementById('regraSubcategoria').value || null;
+
+    if (!padrao || !categoria) {
+        showToast('Padrão e categoria são obrigatórios', 'error');
+        return;
+    }
+
+    try {
+        const url = id ? `/api/regras-categorizacao/${id}` : '/api/regras-categorizacao';
+        const method = id ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ padrao, categoria, subcategoria })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            fecharModalRegra();
+            carregarRegras();
+            showToast(id ? 'Regra atualizada!' : 'Regra criada!');
+        } else {
+            showToast(result.error || 'Erro ao salvar', 'error');
+        }
+    } catch (e) {
+        console.error('Erro:', e);
+        showToast('Erro de conexão', 'error');
+    }
+}
+
+async function excluirRegra(id) {
+    if (!confirm('Excluir esta regra de categorização?')) return;
+
+    try {
+        const response = await fetch(`/api/regras-categorizacao/${id}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            carregarRegras();
+            showToast('Regra excluída!');
+        } else {
+            showToast(result.error || 'Erro ao excluir', 'error');
+        }
+    } catch (e) {
+        showToast('Erro de conexão', 'error');
+    }
+}
+
+// Carregar regras ao expandir a seção
+document.addEventListener('DOMContentLoaded', function() {
+    // Observar quando a seção de regras for expandida
+    const regrasCard = document.querySelector('#tabela-regras')?.closest('.collapsible-card');
+    if (regrasCard) {
+        const header = regrasCard.querySelector('.collapsible-header');
+        header.addEventListener('click', function() {
+            // Aguardar a expansão e carregar dados
+            setTimeout(() => {
+                const content = regrasCard.querySelector('.collapsible-content');
+                if (!content.classList.contains('hidden')) {
+                    carregarRegras();
+                }
+            }, 100);
+        });
+    }
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,632 @@
+================================================================================
+ROADMAP FINAL - ZAIGEN: APP DE ACOMPANHAMENTO FINANCEIRO
+================================================================================
+
+Versão: 3.0 (Ajustado para foco em acompanhamento)
+Data: 03/01/2026
+Status atual: 60% completo | Nota: 7.9/10
+
+OBJETIVO DO PRODUTO:
+App de acompanhamento de gastos para análise histórica e planejamento posterior.
+Não é ferramenta de controle ativo (sem projeções), mas sim de análise profunda.
+
+================================================================================
+✅ FASES CONCLUÍDAS (100%)
+================================================================================
+
+**FASE 1 - CORE DO SISTEMA**
+✓ Upload e processamento de faturas C6 Bank
+✓ Categorização automática (12 categorias + subcategorias)
+✓ Banco de dados robusto (11 tabelas)
+✓ Sistema de autenticação
+✓ Dashboard principal com seletor de mês
+✓ Detecção de duplicatas
+✓ Tratamento de estornos
+
+**FASE 2 - GRÁFICOS E VISUALIZAÇÕES**
+✓ 4 gráficos Chart.js profissionais:
+  - Doughnut (distribuição categorias)
+  - Barras (evolução 6 meses)
+  - Empilhado (recorrente vs variável)
+  - Linha (tendência diária comparativa)
+✓ Sparklines SVG nas tabelas
+✓ Gauge de meta animado
+✓ Tooltips customizados glassmorphism
+
+**FASE 3 - DRILL-DOWN E DETALHAMENTO**
+✓ Expansão de categorias (lazy loading)
+✓ Tabela de transações completa
+✓ Ordenação por qualquer coluna
+✓ Edição inline de categoria
+✓ Sistema de regras aprendidas
+✓ Drag-and-drop para recorrentes
+✓ Mapeamento de descrições customizadas
+
+**EXTRAS IMPLEMENTADOS:**
+✓ Gestão avançada de categorias personalizadas
+✓ Recorrentes manuais (adicionar/ignorar/restaurar)
+✓ Parcelamentos manuais
+✓ Autocomplete de descrições
+✓ Toast notifications
+✓ Sistema de metas padrão global
+
+================================================================================
+✅ FASE 4 - ANÁLISES AUTOMÁTICAS (CONCLUÍDA)
+================================================================================
+
+Status: ✓ ENTREGUE
+
+FUNCIONALIDADES IMPLEMENTADAS:
+✓ Detecção de gastos recorrentes (2+ meses)
+✓ Separação: mensalidades vs parcelamentos vs variável
+✓ Cálculo de % do total e variação mensal
+✓ Indicadores Visuais na Tabela (Alertas de Picos e Variação)
+
+RESULTADO: Sistema inteligente que identifica padrões automaticamente.
+
+================================================================================
+🚀 FASE 5 - MÓDULO CONTA CORRENTE & ARQUITETURA MODULAR
+================================================================================
+
+Status: EM ANDAMENTO
+Objetivo: Criar sistema independente para Extratos Bancários, separando
+a lógica de "Cartão de Crédito" da "Conta Corrente".
+
+SUB-TAREFAS:
+
+1. BACKEND & PARSERS (✅ CONCLUÍDO)
+   ✓ Parser inteligente (detecta Fatura vs Extrato)
+   ✓ Lógica de Extrato: Entrada (+), Saída (-)
+   ✓ Adaptação do Banco de Dados (campo 'tipo')
+   ✓ Isolamento ("Blindagem") das funções do Dashboard atual para não misturar dados
+
+2. FRONTEND - MÓDULO CONTA (EM BREVE)
+   □ Nova página `/conta` dedicada a extratos
+   □ Cards de Saldo, Total Entradas, Total Saídas
+   □ Tabela de Extrato Bancário (cronológica)
+   □ Gráfico de Evolução de Saldo
+
+3. NAVEGAÇÃO & ESTRUTURA
+   □ Atualizar menu superior (Dashboard vira "Cartão"?)
+   □ Preparar terreno para futura "Home" unificada
+
+================================================================================
+🔮 FASE 6 - SUPER DASHBOARD (INTEGRAÇÃO)
+================================================================================
+Objetivo: Criar uma Home Screen executiva que resume Cartão + Conta.
+
+- Cards de Patrimônio Total
+- Balanço Global (Entradas Totais vs Saídas Totais)
+- Alertas Unificados
+
+FUNCIONALIDADES:
+
+□ **Parser de Extrato Conta Corrente** (6-8h)
+  - Upload de CSV/OFX do C6 Bank (conta, não cartão)
+  - Detecção automática de colunas
+  - Validação de formato
+  - Tratamento de erros
+
+□ **Classificação Automática de Entradas** (4-6h)
+  - Salário/Pró-labore (palavras-chave: SALARIO, PGTO, etc)
+  - Rendimentos (RENDIMENTO, DIVIDENDO, JUROS)
+  - Transferências recebidas (PIX, TED recebido)
+  - Reembolsos
+  - Outros (categoria genérica)
+
+□ **Detecção de Pagamento de Fatura** (2-3h)
+  - Identificar débito: "PAGAMENTO FATURA", "CARTAO", etc
+  - NÃO somar como despesa (já está no cartão)
+  - Vincular débito com fechamento da fatura
+  - Evitar duplicidade
+
+□ **Métricas no Dashboard** (3-4h)
+  - Card: Receita Total do mês
+  - Card: Despesa Total (já existe)
+  - Card: Resultado Líquido (Receita - Despesa)
+  - Taxa de Poupança: ((Receita - Despesa) / Receita) * 100
+  - Indicador visual: verde se positivo, vermelho se negativo
+
+□ **Gráfico Adicional** (1-2h)
+  - Barras duplas: Receita vs Despesa (últimos 6 meses)
+  - Linha de resultado (diferença)
+  - Cores: verde (receita) / laranja (despesa)
+
+ESTRUTURA NO BANCO:
+```sql
+CREATE TABLE receitas (
+    id INTEGER PRIMARY KEY,
+    data_transacao DATE NOT NULL,
+    descricao TEXT NOT NULL,
+    valor REAL NOT NULL,
+    tipo TEXT, -- 'salario', 'rendimento', 'transferencia', 'reembolso', 'outro'
+    mes_referencia TEXT,
+    fonte_arquivo TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_receita_mes ON receitas(mes_referencia);
+CREATE INDEX idx_receita_tipo ON receitas(tipo);
+```
+
+IMPACTO: MUITO ALTO
+- Visão completa do fluxo financeiro
+- Base para planejamento real
+- Diferencial competitivo
+
+================================================================================
+🔍 FASE 6 - FILTROS E ANÁLISE PROFUNDA [PRIORIDADE ALTA]
+================================================================================
+
+Status: NÃO INICIADA
+Prazo estimado: 16-20 horas
+
+OBJETIVO:
+Permitir análises customizadas e exportação de dados para planejamento externo.
+
+FUNCIONALIDADES:
+
+□ **Sistema de Filtros Avançados** (8-10h)
+  - Painel lateral/modal de filtros
+  - Período customizado:
+    → Calendário: data início + data fim
+    → Atalhos: "Últimos 30 dias", "Último trimestre", "Ano completo"
+  - Múltiplas categorias (checkboxes)
+  - Tipo de gasto:
+    → Recorrente / Não-recorrente
+    → Parcelado / À vista
+  - Range de valores:
+    → Slider: R$ min - R$ max
+    → Input manual de valores
+  - Busca por fornecedor:
+    → Texto livre com autocomplete
+    → Regex support (opcional)
+  - Cartão (se múltiplos cartões)
+  - Preview: "X transações encontradas (R$ Y total)"
+  - Botão "Aplicar Filtros" + "Limpar"
+
+□ **Aplicação Global de Filtros** (2-3h)
+  - Filtros afetam:
+    → Tabela de transações
+    → Todos os gráficos
+    → Cards de resumo
+  - URL com query params (compartilhável)
+  - Ex: /dashboard?mes=2025-01&categoria=Alimentação,Transporte&min=100
+
+□ **Salvar Filtros Favoritos** (2-3h)
+  - Botão "Salvar filtro"
+  - Modal: Nome do filtro
+  - Dropdown: "Meus filtros salvos"
+  - Tabela no banco: filtros_salvos
+  - Editar/Excluir filtro salvo
+
+□ **Exportação de Dados** (4-6h)
+  - Botão "Exportar" com dropdown:
+    
+    → **CSV** (2h)
+      - Transações com filtros aplicados
+      - Colunas: Data, Descrição, Categoria, Valor, Parcela
+      - Encoding UTF-8 BOM (Excel compatível)
+      - Nome: financa_YYYY-MM-DD.csv
+    
+    → **Excel** (3-4h)
+      - Formatação profissional
+      - Múltiplas abas:
+        * Transações (tabela formatada)
+        * Resumo (pivot table automático)
+        * Gráficos (embutidos)
+      - Fórmulas preservadas
+      - Cores e formatação condicional
+      - Nome: financa_YYYY-MM-DD.xlsx
+    
+    → **PDF** (futuro - Fase 8)
+      - Relatório visual completo
+
+□ **Comparador de Períodos** (2-3h)
+  - Interface: Select dois períodos
+  - Ex: "Jan/2025 vs Jan/2024"
+  - Visualização lado a lado:
+    → Tabela comparativa por categoria
+    → Colunas: Categoria | 2025 | 2024 | Δ | Δ%
+    → Ordenação por variação (maior para menor)
+    → Destaque: verde (reduziu) / vermelho (aumentou)
+  - Opcional: Gráficos comparativos
+
+BIBLIOTECAS NECESSÁRIAS:
+```
+openpyxl==3.1.2      # Excel
+xlsxwriter==3.1.9    # Alternativa Excel
+pandas==2.1.4        # Manipulação dados (opcional)
+```
+
+IMPACTO: ALTO
+- Análises personalizadas
+- Exportação para planejamento externo (planilhas próprias)
+- Comparações temporais
+
+================================================================================
+🎯 FASE 7 - SISTEMA DE METAS (SIMPLIFICADO)
+================================================================================
+
+Status: 60% COMPLETO
+Prazo estimado: 4-6 horas para completar
+
+OBJETIVO:
+Meta global mensal como referência (não como controle ativo).
+
+IMPLEMENTADO:
+✓ Meta padrão global
+✓ Metas individuais por mês
+✓ Gauge visual no dashboard
+✓ Histórico de cumprimento
+
+FALTANDO:
+□ Gráfico comparativo Meta vs Realizado (4-6h)
+  - Linha da meta (constante horizontal)
+  - Barras do realizado (últimos 6 meses)
+  - Área entre linhas (economia/deficit)
+  - Legenda: "Economizou R$ X nos últimos 6 meses"
+
+OPCIONAL (Futuro - baixa prioridade):
+□ Metas por categoria
+  - Interface para definir limites individuais
+  - Ex: Alimentação máx R$ 1.500, Transporte R$ 800
+  - Gauge mini por categoria
+  - Alerta visual quando próximo do limite
+
+NOTA: Metas servem como referência para análise, não para controle preditivo.
+
+================================================================================
+📱 FASE 8 - POLISH E QUALIDADE
+================================================================================
+
+Status: 15% COMPLETO
+Prazo estimado: 20-30 horas
+
+SUBCATEGORIAS:
+
+**A. RESPONSIVIDADE MOBILE** (8-12h)
+□ Media queries para tablets e celulares
+□ Menu hamburger
+□ Gráficos responsivos
+□ Touch gestures (swipe, pinch)
+□ Tabelas scroll horizontal
+□ Cards empilhados verticalmente
+□ Breakpoints: 1200px, 768px, 480px
+
+**B. PERFORMANCE** (4-6h)
+□ Paginação nas tabelas (50/página)
+□ Índice composto: (mes_referencia, categoria)
+□ Cache LRU para resumos mensais
+□ Lazy load de gráficos pesados
+□ Debounce em buscas (300ms)
+
+**C. SEGURANÇA** (3-4h)
+□ CSRF protection (Flask-WTF)
+□ Rate limiting no login (5/minuto)
+□ Mover secrets para .env
+□ Logging de tentativas falhas
+□ HTTPS enforcement (produção)
+
+**D. DOCUMENTAÇÃO** (4-6h)
+□ README.md completo:
+  - Screenshots do app
+  - Instalação passo a passo
+  - Como usar
+  - Troubleshooting
+  - FAQ
+□ Docstrings em todas as funções
+□ Comentários inline em lógica complexa
+□ API.md (documentação de endpoints)
+
+**E. TESTES** (6-8h)
+□ Pytest para backend:
+  - Testes unitários (db.py, parsers)
+  - Testes de integração (APIs)
+  - Coverage >70%
+□ Testes manuais:
+  - Smoke tests
+  - User acceptance testing
+□ CI/CD básico (GitHub Actions - opcional)
+
+**F. UX AVANÇADA** (4-6h)
+□ Loading skeletons (sem "Carregando...")
+□ Atalhos de teclado:
+  - / → Busca
+  - ESC → Fechar modals (já tem)
+  - ← → Mês anterior/próximo
+□ Tour guiado (primeira vez)
+□ Breadcrumbs de navegação
+□ Estados de erro visuais
+□ Empty states bem desenhados
+
+================================================================================
+🚀 FASE 9 - DISTRIBUIÇÃO (FUTURO DISTANTE)
+================================================================================
+
+Status: PLANEJADA (após testes)
+Prazo estimado: 20-40 horas
+
+OBJETIVO:
+Criar instalador standalone (não requer Python instalado).
+
+OPÇÕES DE EMPACOTAMENTO:
+
+**A. PyInstaller** (Mais simples)
+```bash
+pip install pyinstaller
+pyinstaller --onefile --windowed --name Zaigen app.py
+```
+Prós: Fácil, rápido
+Contras: Executável grande (80-150MB)
+
+**B. Nuitka** (Performance)
+```bash
+pip install nuitka
+python -m nuitka --standalone --onefile app.py
+```
+Prós: Rápido, otimizado
+Contras: Compilação lenta
+
+**C. Electron + Flask** (Híbrido)
+- Flask como backend
+- Electron como wrapper desktop
+- Aparência nativa
+Prós: Look profissional, cross-platform
+Contras: Muito maior (200-300MB)
+
+**D. Tauri + Flask** (Moderno)
+- Rust-based wrapper (mais leve que Electron)
+- Flask backend
+Prós: Leve (30-50MB), rápido, seguro
+Contras: Setup mais complexo
+
+DECISÃO SUGERIDA:
+**Curto prazo:** PyInstaller (fácil, funciona)
+**Longo prazo:** Tauri (profissional, leve)
+
+FUNCIONALIDADES ADICIONAIS:
+
+□ **Instalador** (6-10h)
+  - Windows: Inno Setup ou NSIS
+  - macOS: DMG com background customizado
+  - Linux: .deb / .rpm / AppImage
+  - Auto-update (opcional)
+
+□ **Configuração Inicial** (4-6h)
+  - Wizard de primeira execução
+  - Escolher diretório de dados
+  - Definir senha
+  - Importar primeiro arquivo
+
+□ **Sistema Tray** (2-3h)
+  - Ícone na bandeja do sistema
+  - Menu: Abrir, Importar, Sair
+  - Notificações (opcional)
+
+□ **Auto-Update** (6-8h)
+  - Verificar versão no GitHub releases
+  - Download automático
+  - Aplicar update com restart
+
+PRIORIDADE: BAIXÍSSIMA (só após tudo funcionar perfeitamente)
+
+NOTA IMPORTANTE:
+Distribuição é a ÚLTIMA etapa. Antes disso:
+1. App 100% funcional
+2. Testes completos
+3. Bugs corrigidos
+4. Documentação pronta
+5. Beta testing com usuários reais
+
+================================================================================
+📊 FUNCIONALIDADES EXTRAS (FUTURO OPCIONAL)
+================================================================================
+
+Funcionalidades que podem ser adicionadas depois do core completo:
+
+**Análise Avançada:**
+□ Heatmap de gastos (dia da semana × semana do mês)
+□ Análise de sazonalidade (meses com pico)
+□ Top 10 fornecedores
+□ Gráfico Treemap (hierárquico)
+□ Gráfico Sankey (fluxo de dinheiro)
+
+**Integrações Locais:**
+□ Importação de arquivos de outros bancos (Nubank, Inter, Itaú)
+□ Exportação para formatos abertos (JSON, CSV, Excel)
+□ Backup local criptografado
+
+**Recursos Avançados:**
+□ Multi-usuário / Multi-perfil
+□ Múltiplos cartões
+□ Múltiplas contas bancárias
+□ OCR de recibos (foto → transação)
+□ Tags customizadas (além de categorias)
+□ Notas em transações
+□ Anexos (PDFs, imagens)
+
+**Inteligência:**
+□ Machine Learning para categorização
+□ Detecção de fraudes
+□ Sugestões de economia
+□ Comparação com padrões similares
+
+**Exportação Avançada:**
+□ Relatórios PDF automáticos mensais
+□ Email com resumo mensal
+□ Webhook para integração externa
+□ API REST para terceiros
+
+PRIORIDADE: Tudo isso é OPCIONAL e pós-lançamento.
+
+================================================================================
+🗓️ CRONOGRAMA REALISTA
+================================================================================
+
+**AGORA → Versão 1.0 Beta (MVP Completo)**
+
+Semana 1-2: Completar Fase 4 + Docs básicos (10h)
+├─ Indicadores visuais (2h)
+└─ README.md inicial (8h)
+
+Semana 3-5: Fase 5 - Receitas (20h)
+├─ Parser extrato (8h)
+├─ Classificação entradas (6h)
+├─ Dashboard + gráfico (6h)
+
+Semana 6-8: Fase 6 - Filtros e Exportação (20h)
+├─ Sistema de filtros (10h)
+├─ Salvar filtros (3h)
+├─ Exportação CSV/Excel (7h)
+
+Semana 9: Fase 7 - Meta completar + Fase 8 parcial (12h)
+├─ Gráfico comparativo meta (6h)
+├─ Performance básica (3h)
+├─ Segurança essencial (3h)
+
+Semana 10-11: Fase 8 - Responsividade + Testes (18h)
+├─ Mobile responsive (10h)
+├─ Testes unitários (8h)
+
+**TOTAL: ~82 horas → ~11 semanas (8h/semana)**
+
+**DEPOIS → Versão 1.0 Estável**
+
+- Beta testing com usuários (2-4 semanas)
+- Correção de bugs reportados
+- Polish final
+- Documentação completa
+
+**MUITO DEPOIS → Versão 2.0 (Distribuição)**
+
+- Fase 9 - Instalador standalone
+- Marketing/Landing page
+- Lançamento público
+
+================================================================================
+🎯 ESCOPO MÍNIMO VIÁVEL (MVP)
+================================================================================
+
+Para ter um produto funcional e útil AGORA, o essencial é:
+
+✅ PRONTO:
+- Core (upload, categorização, banco)
+- Gráficos (4 tipos + sparklines)
+- Drill-down (expansão, ordenação)
+- Recorrentes (detecção automática)
+- Metas básicas
+
+🔨 FALTAM (Crítico):
+- Indicadores visuais (2h)
+- Receitas (20h)
+- Filtros básicos (12h)
+- Exportação CSV (2h)
+
+**TOTAL: 36 horas para MVP completo e útil**
+
+Com isso você tem:
+- Acompanhamento completo ✓
+- Análise profunda ✓
+- Exportação para planejamento ✓
+- Insights automáticos ✓
+
+================================================================================
+💡 DECISÃO: O QUE FAZER AGORA?
+================================================================================
+
+OPÇÃO A - MVP Rápido (36h ~ 5 semanas):
+1. Indicadores visuais (2h)
+2. Receitas (20h)
+3. Filtros básicos (12h)
+4. Export CSV (2h)
+→ Produto usável para você e beta testers
+
+OPÇÃO B - Produto Completo (82h ~ 11 semanas):
+1. Tudo do MVP
+2. Excel/PDF export
+3. Mobile responsive
+4. Testes
+5. Docs completas
+→ Produto comercializável
+
+OPÇÃO C - Mínimo Absoluto (22h ~ 3 semanas):
+1. Indicadores visuais (2h)
+2. Receitas (20h)
+→ Funcional para uso pessoal
+
+**RECOMENDAÇÃO: Opção A (MVP Rápido)**
+Motivo: Equilibra velocidade com utilidade. Você terá algo completo
+para usar e mostrar rapidamente, depois pode polir com calma.
+
+================================================================================
+📈 COMPARATIVO: ZAIGEN vs MERCADO
+================================================================================
+
+Com MVP completo (Opção A), como Zaigen se compara?
+
+| Feature | Zaigen | Guiabolso | Mobills | Organizze | YNAB |
+|---------|--------|-----------|---------|-----------|------|
+| Import automático | Manual | Auto | Auto | Auto | Auto |
+| Categorização | Auto | Auto | Auto | Manual | Manual |
+| Gráficos | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ |
+| Alertas | ⭐⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐ |
+| Receitas | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| Filtros | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐ |
+| Export | ⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐ |
+| Design | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐ |
+| Privacidade | ⭐⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ |
+| Preço | Grátis | Grátis* | R$ 10/mês | R$ 8/mês | R$ 60/mês |
+
+*Com ads e dados vendidos
+
+**DIFERENCIAIS DO ZAIGEN:**
+✓ 100% local (privacidade total)
+✓ Design único (cyberpunk profissional)
+✓ Gráficos superiores
+✓ Sistema de alertas inteligente
+✓ Código aberto (potencial)
+✓ Sem mensalidade
+
+**LIMITAÇÕES CONSCIENTES (PELO FOCO EM PRIVACIDADE):**
+- Importação manual (para não compartilhar senhas bancárias)
+- Sem sincronização em nuvem (dados ficam apenas no seu PC)
+- Acesso mobile apenas via rede local (Wi-Fi)
+
+================================================================================
+🏆 META FINAL
+================================================================================
+
+**VERSÃO 1.0 - "Zaigen: Acompanhamento Financeiro Inteligente"**
+
+Um aplicativo desktop local para:
+- ✅ Importar faturas de cartão (C6 Bank inicialmente)
+- ✅ Importar extratos de conta (receitas)
+- ✅ Categorizar automaticamente gastos
+- ✅ Visualizar padrões e tendências (gráficos profissionais)
+- ✅ Detectar anomalias e recorrentes (alertas inteligentes)
+- ✅ Filtrar e analisar períodos específicos
+- ✅ Exportar dados para planejamento externo
+
+**Público-alvo:**
+- Pessoas que querem controle sem compartilhar dados
+- Traders/freelancers com receitas variáveis
+- Quem faz planejamento em planilhas próprias
+- Early adopters de ferramentas de produtividade
+
+**Proposta de valor:**
+"Entenda seus gastos. Planeje seu futuro. 100% privado."
+
+**Posicionamento:**
+- Alternativa local ao Guiabolso
+- Complemento ao YNAB (análise histórica)
+- Ferramenta para quem valoriza privacidade
+
+================================================================================
+FIM DO ROADMAP AJUSTADO
+================================================================================
+Próximo passo: Implementar indicadores visuais na tabela (2h)
+Versão atual: 60% completo (7.9/10)
+Versão MVP: 36h de trabalho
+Versão 1.0 completa: 80h de trabalho
+Distribuição standalone: Muito depois (pós-testes)

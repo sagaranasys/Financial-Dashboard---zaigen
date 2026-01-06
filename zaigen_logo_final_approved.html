@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>zaigen - Logo Final (Exo 2 + 20px Glow)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            max-width: 1600px;
+        }
+
+        .title {
+            color: #00f0ff;
+            font-size: 14px;
+            letter-spacing: 3px;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            font-weight: 300;
+        }
+
+        /* Main Logo */
+        .main-logo {
+            background: #000000;
+            border: 1px solid #1a1a2e;
+            border-radius: 20px;
+            padding: 120px 80px;
+            margin-bottom: 50px;
+        }
+
+        .logo-main {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 96px;
+            font-weight: 600;
+            letter-spacing: 8px;
+            margin: 20px 0;
+            color: #00f0ff;
+            text-shadow: 
+                0 0 5px rgba(0, 240, 255, 1),
+                0 0 12px rgba(0, 240, 255, 0.6),
+                0 0 20px rgba(0, 240, 255, 0.3);
+        }
+
+        .kanji-main {
+            font-size: 32px;
+            margin-top: 30px;
+            letter-spacing: 10px;
+            color: #ff6b00;
+            text-shadow: 
+                0 0 20px rgba(255, 107, 0, 1),
+                0 0 40px rgba(255, 107, 0, 0.9),
+                0 0 60px rgba(255, 107, 0, 0.8),
+                0 0 80px rgba(255, 107, 0, 0.7),
+                0 0 100px rgba(255, 107, 0, 0.6),
+                0 0 120px rgba(255, 107, 0, 0.5),
+                0 0 140px rgba(255, 107, 0, 0.4),
+                0 0 160px rgba(255, 107, 0, 0.3),
+                0 0 180px rgba(255, 107, 0, 0.2),
+                0 0 200px rgba(255, 107, 0, 0.1);
+        }
+
+        /* Versões para uso */
+        .usage-section {
+            margin-top: 50px;
+        }
+
+        .usage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .usage-card {
+            background: #000000;
+            border: 1px solid #1a1a2e;
+            border-radius: 10px;
+            padding: 50px 40px;
+        }
+
+        .usage-title {
+            color: #666;
+            font-size: 10px;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+        }
+
+        /* Header/Navbar */
+        .header-logo {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            color: #00f0ff;
+            text-shadow: 
+                0 0 4px rgba(0, 240, 255, 1),
+                0 0 10px rgba(0, 240, 255, 0.6),
+                0 0 16px rgba(0, 240, 255, 0.3);
+            display: inline-block;
+        }
+
+        .header-kanji {
+            font-size: 18px;
+            letter-spacing: 5px;
+            color: #ff6b00;
+            text-shadow: 
+                0 0 15px rgba(255, 107, 0, 1),
+                0 0 30px rgba(255, 107, 0, 0.8),
+                0 0 50px rgba(255, 107, 0, 0.6),
+                0 0 75px rgba(255, 107, 0, 0.4),
+                0 0 100px rgba(255, 107, 0, 0.2);
+            margin-left: 15px;
+            display: inline-block;
+        }
+
+        /* Ícone/Logo quadrado */
+        .icon-logo {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 64px;
+            font-weight: 600;
+            color: #00f0ff;
+            text-shadow: 
+                0 0 5px rgba(0, 240, 255, 1),
+                0 0 12px rgba(0, 240, 255, 0.6),
+                0 0 20px rgba(0, 240, 255, 0.3);
+        }
+
+        /* Favicon/App Icon */
+        .favicon-logo {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 48px;
+            font-weight: 700;
+            color: #ff6b00;
+            text-shadow: 
+                0 0 12px rgba(255, 107, 0, 1),
+                0 0 25px rgba(255, 107, 0, 0.7),
+                0 0 40px rgba(255, 107, 0, 0.4);
+        }
+
+        /* Variações de cor */
+        .color-variations {
+            margin-top: 50px;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .color-card {
+            background: #000000;
+            border: 1px solid #1a1a2e;
+            border-radius: 15px;
+            padding: 60px 40px;
+        }
+
+        .color-title {
+            color: #666;
+            font-size: 11px;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .logo-color {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 64px;
+            font-weight: 600;
+            letter-spacing: 6px;
+            margin: 20px 0;
+        }
+
+        .kanji-color {
+            font-size: 22px;
+            margin-top: 20px;
+            letter-spacing: 8px;
+        }
+
+        /* Cyan + Orange (padrão) */
+        .c1 .logo-color {
+            color: #00f0ff;
+            text-shadow: 
+                0 0 5px rgba(0, 240, 255, 1),
+                0 0 12px rgba(0, 240, 255, 0.6),
+                0 0 20px rgba(0, 240, 255, 0.3);
+        }
+        .c1 .kanji-color {
+            color: #ff6b00;
+            text-shadow: 
+                0 0 20px rgba(255, 107, 0, 1),
+                0 0 40px rgba(255, 107, 0, 0.9),
+                0 0 60px rgba(255, 107, 0, 0.8),
+                0 0 80px rgba(255, 107, 0, 0.7),
+                0 0 100px rgba(255, 107, 0, 0.6),
+                0 0 120px rgba(255, 107, 0, 0.5),
+                0 0 140px rgba(255, 107, 0, 0.4),
+                0 0 160px rgba(255, 107, 0, 0.3),
+                0 0 180px rgba(255, 107, 0, 0.2),
+                0 0 200px rgba(255, 107, 0, 0.1);
+        }
+
+        /* All Cyan */
+        .c2 .logo-color {
+            color: #00f0ff;
+            text-shadow: 
+                0 0 5px rgba(0, 240, 255, 1),
+                0 0 12px rgba(0, 240, 255, 0.6),
+                0 0 20px rgba(0, 240, 255, 0.3);
+        }
+        .c2 .kanji-color {
+            color: #00f0ff;
+            text-shadow: 
+                0 0 20px rgba(0, 240, 255, 1),
+                0 0 40px rgba(0, 240, 255, 0.8),
+                0 0 60px rgba(0, 240, 255, 0.6),
+                0 0 80px rgba(0, 240, 255, 0.4),
+                0 0 100px rgba(0, 240, 255, 0.2);
+        }
+
+        /* All Orange */
+        .c3 .logo-color {
+            color: #ff6b00;
+            text-shadow: 
+                0 0 5px rgba(255, 107, 0, 1),
+                0 0 12px rgba(255, 107, 0, 0.6),
+                0 0 20px rgba(255, 107, 0, 0.3);
+        }
+        .c3 .kanji-color {
+            color: #ff6b00;
+            text-shadow: 
+                0 0 20px rgba(255, 107, 0, 1),
+                0 0 40px rgba(255, 107, 0, 0.9),
+                0 0 60px rgba(255, 107, 0, 0.8),
+                0 0 80px rgba(255, 107, 0, 0.7),
+                0 0 100px rgba(255, 107, 0, 0.6),
+                0 0 120px rgba(255, 107, 0, 0.5),
+                0 0 140px rgba(255, 107, 0, 0.4),
+                0 0 160px rgba(255, 107, 0, 0.3),
+                0 0 180px rgba(255, 107, 0, 0.2),
+                0 0 200px rgba(255, 107, 0, 0.1);
+        }
+
+        /* White clean */
+        .c4 .logo-color {
+            color: #ffffff;
+            text-shadow: 
+                0 0 5px rgba(255, 255, 255, 0.8),
+                0 0 12px rgba(255, 255, 255, 0.5),
+                0 0 20px rgba(255, 255, 255, 0.2);
+        }
+        .c4 .kanji-color {
+            color: #666;
+            text-shadow: none;
+        }
+
+        /* Specs */
+        .specs {
+            margin-top: 40px;
+            padding: 30px;
+            background: rgba(0, 240, 255, 0.05);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 15px;
+            color: #00f0ff;
+            font-size: 13px;
+            line-height: 1.8;
+            text-align: left;
+        }
+
+        .specs h3 {
+            margin-top: 0;
+            color: #ff6b00;
+            font-size: 16px;
+            letter-spacing: 1px;
+        }
+
+        .specs code {
+            background: rgba(0, 240, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            display: block;
+            margin: 5px 0;
+        }
+
+        .color-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .color-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-sample {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+        }
+
+        .sample1 { background: #00f0ff; box-shadow: 0 0 20px rgba(0, 240, 255, 0.5); }
+        .sample2 { background: #ff6b00; box-shadow: 0 0 20px rgba(255, 107, 0, 0.5); }
+        .sample3 { background: #000000; border: 1px solid #333; }
+
+        .final-badge {
+            display: inline-block;
+            background: rgba(0, 240, 255, 0.2);
+            color: #00f0ff;
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-size: 11px;
+            margin-left: 15px;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">zaigen - Logo Final <span class="final-badge">✓ APROVADO</span></div>
+
+        <!-- Main Logo -->
+        <div class="main-logo">
+            <div class="logo-main">zaigen</div>
+            <div class="kanji-main">財源</div>
+        </div>
+
+        <!-- Versões para uso -->
+        <div class="usage-section">
+            <div class="title">Versões para Diferentes Usos</div>
+            <div class="usage-grid">
+                <div class="usage-card">
+                    <div class="usage-title">Header / Navbar (32px)</div>
+                    <div class="header-logo">zaigen</div>
+                    <div class="header-kanji">財源</div>
+                </div>
+
+                <div class="usage-card">
+                    <div class="usage-title">Ícone / Logo Quadrado (64px)</div>
+                    <div class="icon-logo">z</div>
+                </div>
+
+                <div class="usage-card">
+                    <div class="usage-title">Favicon / App Icon (48px)</div>
+                    <div class="favicon-logo">Z</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variações de cor -->
+        <div class="color-variations">
+            <div class="title">Variações de Cor (opcional)</div>
+            <div class="color-grid">
+                <div class="color-card c1">
+                    <div class="color-title">⭐ Cyan + Orange (Padrão)</div>
+                    <div class="logo-color">zaigen</div>
+                    <div class="kanji-color">財源</div>
+                </div>
+
+                <div class="color-card c2">
+                    <div class="color-title">All Cyan</div>
+                    <div class="logo-color">zaigen</div>
+                    <div class="kanji-color">財源</div>
+                </div>
+
+                <div class="color-card c3">
+                    <div class="color-title">All Orange</div>
+                    <div class="logo-color">zaigen</div>
+                    <div class="kanji-color">財源</div>
+                </div>
+
+                <div class="color-card c4">
+                    <div class="color-title">White Clean (Light backgrounds)</div>
+                    <div class="logo-color">zaigen</div>
+                    <div class="kanji-color">財源</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Especificações Finais -->
+        <div class="specs">
+            <h3>✓ Especificações Finais</h3>
+            
+            <strong>Fonte:</strong> Exo 2<br>
+            <strong>Font-weight:</strong> 600 (Semi-bold)<br>
+            <strong>Letter-spacing:</strong> 8px (logo principal) / 10px (kanji)
+
+            <br><br>
+            <strong>Cores:</strong>
+            <div class="color-info">
+                <div class="color-block">
+                    <div class="color-sample sample1"></div>
+                    <div>
+                        <strong>Cyan Principal</strong><br>
+                        <code>#00f0ff</code>
+                    </div>
+                </div>
+                <div class="color-block">
+                    <div class="color-sample sample2"></div>
+                    <div>
+                        <strong>Orange Accent</strong><br>
+                        <code>#ff6b00</code>
+                    </div>
+                </div>
+                <div class="color-block">
+                    <div class="color-sample sample3"></div>
+                    <div>
+                        <strong>Background</strong><br>
+                        <code>#000000</code>
+                    </div>
+                </div>
+            </div>
+
+            <br>
+            <strong>Glow "zaigen" (20px aprovado):</strong>
+            <code>text-shadow: 
+    0 0 5px rgba(0, 240, 255, 1),
+    0 0 12px rgba(0, 240, 255, 0.6),
+    0 0 20px rgba(0, 240, 255, 0.3);</code>
+
+            <br>
+            <strong>Glow Kanji "財源" (200px):</strong>
+            <code>text-shadow: 
+    0 0 20px rgba(255, 107, 0, 1),
+    0 0 40px rgba(255, 107, 0, 0.9),
+    0 0 60px rgba(255, 107, 0, 0.8),
+    0 0 80px rgba(255, 107, 0, 0.7),
+    0 0 100px rgba(255, 107, 0, 0.6),
+    0 0 120px rgba(255, 107, 0, 0.5),
+    0 0 140px rgba(255, 107, 0, 0.4),
+    0 0 160px rgba(255, 107, 0, 0.3),
+    0 0 180px rgba(255, 107, 0, 0.2),
+    0 0 200px rgba(255, 107, 0, 0.1);</code>
+
+            <br>
+            <strong>Google Fonts import:</strong>
+            <code>https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&display=swap</code>
+        </div>
+    </div>
+</body>
+</html>

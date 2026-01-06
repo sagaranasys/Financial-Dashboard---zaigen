@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Conta Corrente - Zaigen{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header com Seletor de Mês -->
+    <div class="page-header">
+        <h1>
+            Extrato Bancário
+            <small style="font-size: 0.5em; color: var(--text-muted); margin-left: 10px; font-weight: normal; letter-spacing: 0;">Fluxo de caixa</small>
+        </h1>
+        
+        <div class="month-selector">
+            <label for="mes">Período:</label>
+            <select id="mes" onchange="window.location.href='?mes='+this.value">
+                {% for mes in meses %}
+                <option value="{{ mes }}" {% if mes == mes_selecionado %}selected{% endif %}>
+                    {{ mes|format_mes }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="summary-cards">
+        <div class="card">
+            <div class="card-header">
+                <h3>Saldo do Mês</h3>
+            </div>
+            <div class="card-body">
+                <div class="metric-value {{ 'text-success' if dados.resumo.saldo >= 0 else 'text-danger' }}">
+                    {{ dados.resumo.saldo|moeda }}
+                </div>
+                <div class="metric-change" style="background: transparent; padding-left: 0;">
+                    <span class="text-muted">Entradas - Saídas</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Entradas</h3>
+            </div>
+            <div class="card-body">
+                <div class="metric-value text-success">
+                    +{{ dados.resumo.entradas|abs|moeda }}
+                </div>
+                <div class="metric-change positive">
+                    Receitas e Créditos
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Saídas</h3>
+            </div>
+            <div class="card-body">
+                <div class="metric-value text-danger">
+                    {{ dados.resumo.saidas|moeda }}
+                </div>
+                <div class="metric-change negative">
+                    Despesas e Débitos
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Extrato -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Movimentações</h3>
+            <span class="badge" style="background: rgba(0, 240, 255, 0.1); color: var(--neon-blue); padding: 2px 8px; border-radius: 4px; font-size: 0.8em; font-family: 'Fira Code', monospace;">{{ dados.transacoes|length }} itens</span>
+        </div>
+        <div class="card-body">
+            {% if dados.transacoes %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th width="120">Data</th>
+                        <th>Descrição</th>
+                        <th width="150" class="text-right">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in dados.transacoes %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td class="text-muted" style="padding: 12px 0;">{{ tx.data_compra|format_data }}</td>
+                        <td style="padding: 12px 0;">
+                            <div class="tx-desc-main">{{ tx.descricao }}</div>
+                            {% if tx.descricao_original != tx.descricao %}
+                            <div class="tx-desc-sub" style="font-size: 0.85em; color: var(--text-secondary);">{{ tx.descricao_original }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="text-right font-weight-bold {{ 'text-success' if tx.valor > 0 else 'text-danger' }}" style="padding: 12px 0;">
+                            {{ '+' if tx.valor > 0 else '' }}{{ tx.valor|moeda }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <div style="font-size: 2em; margin-bottom: 10px;">📄</div>
+                <p>Nenhuma movimentação encontrada para este mês.</p>
+                <p class="text-small">Certifique-se de fazer upload do Extrato Bancário (.csv)</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos Específicos para Página Conta */
+.tx-desc-main {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+.tx-desc-sub {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+}
+.table th {
+    text-align: left;
+    color: var(--text-label);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+.text-success { color: var(--neon-green) !important; }
+.text-danger { color: var(--neon-red) !important; }
+</style>
+{% endblock %}

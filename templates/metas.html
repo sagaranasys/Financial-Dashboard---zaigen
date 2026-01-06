@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Metas - zaigen{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Metas Financeiras</h1>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">◂ Voltar</a>
+    </div>
+
+    <!-- Meta Padrão -->
+    <div class="card meta-config-card">
+        <div class="card-header">
+            <h3>Meta Mensal Padrão</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">Defina um limite de gastos que será aplicado a todos os meses.</p>
+            <div class="meta-input-group">
+                <span class="input-prefix">R$</span>
+                <input type="number" id="metaPadrao" class="input-meta"
+                       value="{{ meta_padrao }}"
+                       placeholder="0,00" step="100" min="0">
+                <button class="btn btn-primary" onclick="salvarMetaPadrao()">Salvar</button>
+            </div>
+            <div id="feedbackPadrao" class="feedback-message"></div>
+        </div>
+    </div>
+
+    <!-- Histórico de Metas por Mês -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Histórico por Mês</h3>
+        </div>
+        <div class="card-body">
+            {% if meses %}
+            <table class="table table-metas">
+                <thead>
+                    <tr>
+                        <th>Mês</th>
+                        <th class="text-right">Meta</th>
+                        <th class="text-right">Gasto</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mes in meses %}
+                    {% set info = metas_por_mes[mes] %}
+                    <tr>
+                        <td class="mes-label">{{ mes }}</td>
+                        <td class="text-right">
+                            {% if info.meta > 0 %}
+                            {{ info.meta|moeda }}
+                            {% else %}
+                            <span class="text-muted">--</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">{{ info.total|moeda }}</td>
+                        <td class="text-center">
+                            {% if info.meta > 0 %}
+                                {% if info.percentual <= 80 %}
+                                <span class="status-badge status-ok">✓ {{ info.percentual|round(0)|int }}%</span>
+                                {% elif info.percentual <= 100 %}
+                                <span class="status-badge status-warning">⚠ {{ info.percentual|round(0)|int }}%</span>
+                                {% else %}
+                                <span class="status-badge status-danger">✗ {{ info.percentual|round(0)|int }}%</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">--</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>Nenhum dado disponível ainda.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function salvarMetaPadrao() {
+    const input = document.getElementById('metaPadrao');
+    const feedback = document.getElementById('feedbackPadrao');
+    const valor = parseFloat(input.value) || 0;
+
+    try {
+        const response = await fetch('/metas/salvar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({tipo: 'padrao', valor: valor})
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            feedback.className = 'feedback-message success';
+            feedback.textContent = '✓ Meta padrão salva com sucesso!';
+            setTimeout(() => feedback.textContent = '', 3000);
+        } else {
+            feedback.className = 'feedback-message error';
+            feedback.textContent = '✗ Erro ao salvar: ' + result.message;
+        }
+    } catch (error) {
+        feedback.className = 'feedback-message error';
+        feedback.textContent = '✗ Erro de conexão';
+    }
+}
+</script>
+{% endblock %}

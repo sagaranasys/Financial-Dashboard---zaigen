@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Login - zaigen{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-box">
+        <div class="login-header">
+            <div class="logo login-logo">
+                <span class="logo-text">zaigen</span>
+                <span class="logo-kanji">財源</span>
+            </div>
+            <p class="login-subtitle">// autenticação necessária</p>
+        </div>
+
+        <form method="POST" class="login-form">
+            <div class="form-group">
+                <label for="senha">Senha de Acesso</label>
+                <input type="password" id="senha" name="senha" class="form-input" placeholder="••••••••" required autofocus>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                Acessar Sistema
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <p class="text-muted small">Senha padrão: <code>admin123</code></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

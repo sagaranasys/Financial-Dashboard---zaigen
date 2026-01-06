@@ -1,0 +1,368 @@
+================================================================================
+ROADMAP DO PROJETO - DASHBOARD FINANCEIRO
+================================================================================
+
+Desenvolvimento em 7 fases | Prazo estimado: 6-8 semanas
+
+================================================================================
+✅ FASE 1 - CORE DO SISTEMA (CONCLUÍDA)
+================================================================================
+Prazo: 1-2 semanas | Status: ✓ ENTREGUE
+
+FUNCIONALIDADES IMPLEMENTADAS:
+□ Sistema de login com senha
+□ Upload de arquivos ZIP (C6 Bank) com senha automática
+□ Processamento automático de CSV
+□ Parser de faturas C6 Bank
+□ Categorização automática (12 categorias, 30+ subcategorias)
+□ Banco de dados SQLite local
+□ Dashboard básico com resumo mensal
+□ Tabela de gastos por categoria
+□ Comparação mês atual vs anterior (% variação)
+□ Seletor de mês
+□ Histórico de uploads
+□ Sistema de detecção de duplicatas
+□ Design preto/azul degradê/laranja implementado
+
+PÁGINAS CRIADAS:
+✓ Login
+✓ Dashboard principal
+✓ Upload
+✓ Metas (placeholder)
+
+RESULTADO: Sistema funcional para importação e visualização básica
+
+================================================================================
+✅ FASE 2 - GRÁFICOS E VISUALIZAÇÕES (CONCLUÍDA)
+================================================================================
+Prazo: 1-2 semanas | Status: ✓ ENTREGUE
+
+FUNCIONALIDADES IMPLEMENTADAS:
+✓ Gráfico de Barras - Comparativo mensal (últimos 6 meses)
+✓ Gráfico Doughnut/Pizza - Distribuição por categoria
+✓ Gráfico de Linha - Tendência de gastos (evolução diária)
+✓ Gráfico de Barras Empilhadas - Recorrente vs Não-recorrente
+✓ Sparklines - Mini-gráficos nas linhas da tabela
+✓ Gráficos interativos (hover, tooltip com formatação)
+✓ Responsividade dos gráficos
+✓ Tema dark nos gráficos (integrado com design cyberpunk)
+✓ Animações nos gráficos
+✓ Cores consistentes com o tema (neon blue, orange, green)
+✓ Toggle de legenda no gráfico de pizza
+
+PENDENTE (movido para Fase 7):
+□ Gauge - Indicador visual de meta do mês (depende de Fase 5)
+□ Exportar gráficos como imagem
+
+RESULTADO: Dashboard visualmente rico e informativo
+
+================================================================================
+✅ FASE 3 - SUBCATEGORIAS E DRILL-DOWN (CONCLUÍDA)
+================================================================================
+Prazo: 1 semana | Status: ✓ ENTREGUE
+
+FUNCIONALIDADES IMPLEMENTADAS:
+✓ Categorias expansíveis (click para abrir/fechar)
+✓ Mostrar transações ao expandir categoria
+✓ Lista de transações por categoria com:
+  - Descrição, Categoria, Parcela, Valor
+  - Ordenação clicável por qualquer coluna (asc/desc)
+✓ Sistema de regras de categorização aprendidas
+✓ Sparkline ao lado de cada categoria (tendência 6 meses)
+✓ Seção de Gastos Recorrentes com accordion expansível
+
+PENDENTE (movido para Fase 6 ou 7):
+□ Click em subcategoria → Página de detalhes dedicada
+□ Busca/filtro por fornecedor
+□ Paginação (50 itens/página)
+□ Edição manual de categoria direto na interface
+□ Ícones para cada categoria
+
+RESULTADO: Navegação profunda nos dados, drill-down completo
+
+================================================================================
+✅ FASE 4 - ANÁLISES AUTOMÁTICAS (PARCIALMENTE CONCLUÍDA)
+================================================================================
+Prazo: 1-2 semanas | Status: 🔨 EM ANDAMENTO
+
+FUNCIONALIDADES IMPLEMENTADAS:
+✓ Detecção de gastos recorrentes (aparece 2+ meses)
+✓ Seção "Gastos Recorrentes" no dashboard
+✓ Separação por tipo (Mensalidades/Assinaturas vs Parcelamentos)
+✓ Cálculo de % do total representado por recorrentes
+✓ Variação % vs mês anterior no total do mês
+✓ API para toggle ativo/inativo de recorrentes
+✓ Gráfico de barras empilhadas (Recorrente vs Não-recorrente)
+
+PENDENTE:
+□ Alertas de variação em recorrentes individuais:
+  - Ícone ⚠️ quando valor muda significativamente
+  - Tooltip mostrando "Aumentou R$ X vs mês anterior"
+□ Detecção de gastos atípicos:
+  - Valor muito acima da média
+  - Fornecedor novo
+  - Categoria com aumento >50%
+□ Análise de sazonalidade (opcional):
+  - Meses com gastos maiores
+  - Padrões recorrentes (ex: dezembro sempre maior)
+□ Heatmap de gastos (opcional):
+  - Por dia da semana
+  - Por semana do mês
+
+ALERTAS AUTOMÁTICOS (pendente):
+□ "Novo recorrente detectado: X (R$ Y/mês)"
+□ "Transporte aumentou 32% vs mês anterior"
+□ "Gasto atípico: R$ 2.000 em categoria que média R$ 500"
+
+RESULTADO: Sistema inteligente que identifica padrões automaticamente
+
+================================================================================
+💰 FASE 5 - GESTÃO DE RECEITAS (NOVA)
+================================================================================
+Prazo: 1-2 semanas | Status: PLANEJADA
+
+OBJETIVO:
+Permitir o upload de extratos da conta corrente para identificar entradas (receitas)
+e cruzar com os gastos do cartão, evitando duplicidade no pagamento da fatura.
+
+FUNCIONALIDADES A IMPLEMENTAR:
+□ Upload de Extrato Bancário (Foco inicial: C6 Bank):
+  - Suporte a CSV/OFX/PDF da conta corrente
+  - Identificação automática de colunas
+□ Classificação de Entradas:
+  - Identificar Salário / Pró-labore
+  - Identificar Rendimentos / Dividendos
+  - Identificar Pix/TED recebidos (Reembolsos, vendas)
+□ Detecção de Transferências Internas (Anti-Duplicidade):
+  - Identificar débito de "Pagamento de Fatura"
+  - Ignorar esse débito na soma de despesas (pois já está detalhado no cartão)
+  - Vincular pagamento da conta com o fechamento da fatura
+□ Métricas de Receita:
+  - Receita Total vs Despesa Total
+  - Taxa de Poupança ((Receita - Despesa) / Receita)
+  - Resultado Líquido do Mês
+
+RESULTADO: Visão completa do fluxo financeiro (Entradas vs Saídas)
+
+================================================================================
+🎯 FASE 6 - SISTEMA DE METAS
+================================================================================
+Prazo: 1 semana | Status: PLANEJADA
+
+FUNCIONALIDADES A IMPLEMENTAR:
+□ Definir meta mensal global (ex: R$ 15.000)
+□ Definir metas por categoria (ex: Alimentação máx R$ 1.500)
+□ Gauge visual de progresso da meta:
+  - Verde: < 70% da meta
+  - Amarelo: 70-90%
+  - Vermelho: > 90%
+□ Projeção fim do mês:
+  - Baseado no padrão atual
+  - "No ritmo atual, vai gastar R$ X"
+□ Comparação com meses anteriores:
+  - Gráfico de linha mostrando economia
+  - "Economizou R$ X vs mês passado"
+□ Projeção Linear Simples:
+  - "No ritmo atual, o saldo final será R$ X"
+  - Estimativa baseada na média diária de gastos
+□ Histórico de metas:
+  - Metas dos últimos 6 meses
+  - % de cumprimento
+
+RESULTADO: Controle efetivo de gastos com metas e projeções
+
+================================================================================
+🔧 FASE 7 - FILTROS E FERRAMENTAS AVANÇADAS
+================================================================================
+Prazo: 1 semana | Status: PLANEJADA
+
+FUNCIONALIDADES A IMPLEMENTAR:
+□ Filtros avançados:
+  - Por período (data início/fim custom)
+  - Por categoria múltipla
+  - Por tipo (recorrente/único/parcelado)
+  - Por cartão
+  - Por valor (range: R$ X a R$ Y)
+  - Por fornecedor (busca)
+□ Salvar filtros favoritos
+□ Combinação de filtros
+□ Visualização de Top Fluxos:
+  - Gráfico simplificado dos 5 maiores destinos do dinheiro
+  - Agrupamento automático de "Outros" para clareza
+□ Gráfico Treemap - Maiores fornecedores
+□ Exportar dados:
+  - CSV com filtros aplicados
+  - Excel formatado
+  - PDF com relatório visual
+□ Busca global:
+  - Buscar qualquer transação por descrição
+  - Resultados instantâneos
+□ Comparador de períodos:
+  - Jan/2025 vs Jan/2024
+  - Q4/2025 vs Q4/2024
+
+RESULTADO: Ferramentas profissionais de análise
+
+================================================================================
+✨ FASE 8 - REFINAMENTOS E POLIMENTO
+================================================================================
+Prazo: 1-2 semanas | Status: FINAL
+
+FUNCIONALIDADES A IMPLEMENTAR:
+□ Otimizações de performance:
+  - Cache de consultas frequentes
+  - Índices adicionais no banco
+  - Lazy loading de gráficos
+□ Melhorias UX:
+  - Atalhos de teclado
+  - Tooltips informativos
+  - Mensagens de ajuda
+  - Tour guiado (primeira vez)
+□ Backup automático:
+  - Backup semanal do banco
+  - Manter últimos 4 backups
+  - Botão de backup manual
+□ Configurações avançadas:
+  - Trocar senha pela interface
+  - Ajustar categorias/palavras-chave
+  - Escolher moeda/formato
+  - Tema claro/escuro (opcional)
+□ Sistema de Regras Inteligentes:
+  - Sugestão de criação de regra ao editar categoria manualmente
+  - Aplicação retroativa de novas regras (opcional)
+  - Interface visual para gerenciar regras (sem regex manual)
+□ Documentação completa:
+  - Manual do usuário
+  - FAQ
+  - Guia de troubleshooting
+□ Testes finais:
+  - Teste com 10.000+ transações
+  - Teste com 2 anos de dados
+  - Correção de bugs finais
+
+RESULTADO: Sistema production-ready, polido e completo
+
+================================================================================
+📈 FUNCIONALIDADES PÓS-V1.0 (FUTURO - SE NECESSÁRIO)
+================================================================================
+
+POSSÍVEIS MELHORIAS FUTURAS:
+□ Integração com APIs bancárias (Open Banking)
+□ App mobile nativo (iOS/Android)
+□ Sincronização em nuvem (opcional)
+□ Múltiplos usuários/famílias
+□ Controle de investimentos
+□ Análise de rentabilidade (trading vs custo ferramentas)
+□ Previsão de gastos com IA
+□ OCR para extrair dados de imagens de recibos
+□ Integração com Google Drive
+□ Relatórios PDF automáticos mensais
+□ Dashboard compartilhável (link read-only)
+□ Notificações por email
+□ API própria para integrações
+
+================================================================================
+CRONOGRAMA VISUAL
+================================================================================
+
+Semana 1-2:  ████████████ FASE 1 ✓ CONCLUÍDA
+Semana 3-4:  ████████████ FASE 2 ✓ CONCLUÍDA - Gráficos
+Semana 5:    ████████████ FASE 3 ✓ CONCLUÍDA - Drill-down
+Semana 6-7:  ██████░░░░░░ FASE 4 🔨 EM ANDAMENTO - Análises
+Semana 8:    ░░░░░░░░░░░░ FASE 5 - Receitas (NOVA)
+Semana 9:    ░░░░░░░░░░░░ FASE 6 - Metas
+Semana 10:   ░░░░░░░░░░░░ FASE 7 - Filtros
+Semana 11-12: ░░░░░░░░░░░░ FASE 8 - Polimento
+
+================================================================================
+EVOLUÇÃO DAS CAPACIDADES
+================================================================================
+
+FASE 1 (ATUAL):
+"Consigo ver meus gastos organizados por categoria"
+
+FASE 2:
+"Consigo visualizar graficamente a evolução dos meus gastos"
+
+FASE 3:
+"Consigo investigar cada centavo gasto em cada categoria"
+
+FASE 4:
+"O sistema me avisa automaticamente sobre gastos anormais"
+
+FASE 5:
+"Consigo ver quanto ganho e quanto sobra no final do mês"
+
+FASE 6:
+"Consigo definir e acompanhar metas de economia"
+
+FASE 7:
+"Consigo fazer análises profissionais e exportar relatórios"
+
+FASE 8:
+"Tenho um sistema completo, rápido e confiável"
+
+================================================================================
+PRIORIZAÇÃO - O QUE VEM PRIMEIRO?
+================================================================================
+
+ESSENCIAL (Fases 1-3):
+- Importação ✓
+- Visualização básica ✓
+- Gráficos principais
+- Navegação detalhada
+
+IMPORTANTE (Fases 4-6):
+- Análises automáticas
+- Gestão de Receitas
+- Sistema de metas
+- Alertas
+
+DESEJÁVEL (Fases 7-8):
+- Ferramentas avançadas
+- Exportação
+- Otimizações
+- Polimento final
+
+================================================================================
+DECISÃO DE ESCOPO
+================================================================================
+
+MÍNIMO VIÁVEL (Fases 1-3):
+Sistema funcional com visualizações e navegação
+Prazo: ~4 semanas
+Resultado: Você já consegue usar no dia a dia
+
+COMPLETO (Fases 1-6):
+Sistema com inteligência, receitas e metas
+Prazo: ~7-8 semanas
+Resultado: Controle total de finanças (Entradas e Saídas)
+
+PROFISSIONAL (Fases 1-8):
+Sistema production-ready completo
+Prazo: ~9-11 semanas
+Resultado: Ferramenta comparável a apps pagos
+
+================================================================================
+PRÓXIMO PASSO
+================================================================================
+
+VOCÊ ESCOLHE:
+
+Opção A: Seguir todas as 8 fases (9-11 semanas)
+Opção B: Parar após Fase 6 (metas) (7-8 semanas)
+Opção C: Parar após Fase 3 (gráficos + drill-down) (4 semanas)
+
+Qual prefere? 
+
+Podemos também ajustar as fases conforme necessidade:
+- Adicionar funcionalidades em fases anteriores
+- Remover funcionalidades menos importantes
+- Priorizar diferente
+
+================================================================================
+FIM DO ROADMAP
+================================================================================
+
+Próxima entrega: FASE 2 - Gráficos e Visualizações
+Quando começar: Após você aprovar a Fase 1 e reportar problemas (se houver)

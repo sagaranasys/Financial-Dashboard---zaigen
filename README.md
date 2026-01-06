@@ -1,16 +1,25 @@
-# Dashboard Financeiro Pessoal
+# Dashboard Financeiro Pessoal - Zaigen
 
-Sistema web local para controle e análise de gastos pessoais.
+Sistema web local avançado para análise histórica de gastos e fluxo de caixa.
 
-## 🚀 Fase 1 - Core do Sistema (VERSÃO ATUAL)
+## 🚀 Status do Projeto: Versão 3.1 (Fase 5 - Módulo Conta Corrente)
 
-Esta é a primeira versão funcional com:
-- ✅ Upload de faturas C6 Bank (ZIP com senha)
-- ✅ Processamento automático de CSV
-- ✅ Categorização automática de transações
-- ✅ Dashboard básico com resumo mensal
-- ✅ Tabela de gastos por categoria
-- ✅ Autenticação com senha
+O sistema evoluiu de um visualizador de faturas para um gestor financeiro completo.
+
+### ✅ Funcionalidades Implementadas
+- **Módulo Cartão de Crédito**:
+  - Dashboard completo com 4 tipos de gráficos.
+  - Drill-down de categorias e subcategorias.
+  - Detecção automática de gastos recorrentes.
+  - Análise de anomalias (gastos acima da média).
+- **Módulo Conta Corrente (Novo)**:
+  - Importação de Extratos Bancários (CSV).
+  - Distinção automática de Entradas/Saídas.
+  - Visualização de Saldo e Fluxo de Caixa.
+- **Core Tecnológico**:
+  - **Smart Parser 2.0**: Detecta automaticamente se o CSV é Fatura ou Extrato.
+  - **Regex Currency Engine**: Leitura robusta de valores monetários (suporta R$ 1.000,00 e US$ 1,000.00).
+  - **Identidade Visual Unificada**: Design System "Cyberpunk Neon" aplicado em todas as telas.
 
 ## 📋 Pré-requisitos
 
